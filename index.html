@@ -1777,6 +1777,10 @@ function exportPreloadedHtml() {
 }
 
 function init() {
+ // 起動時は共有ポップアップを必ず閉じる
+  const shareModal = document.getElementById("shareModal");
+  if (shareModal) shareModal.classList.remove("open");
+
   // 1. URLに #data=... がついている場合（共有URL・QRコードから開いた場合）は最優先で自動反映！
   if (window.location.hash && window.location.hash.includes("data=")) {
     try {
