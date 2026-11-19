@@ -1,0 +1,3621 @@
+<!DOCTYPE html>
+<html lang="ja"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>区少連 場内アナウンス支援システム v2</title>
+<style>
+  :root {
+    --primary: #1b4f72;
+    --primary-light: #2e86c1;
+    --accent: #d35400;
+    --bg: #f4f6f9;
+    --card: #ffffff;
+    --border: #dce1e7;
+    --text: #2c3e50;
+    --text-muted: #7f8c8d;
+    --success: #1e8449;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    margin: 0;
+    padding: 0;
+    line-height: 1.5;
+  }
+  header {
+    background: var(--primary);
+    color: #fff;
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  }
+  header h1 {
+    font-size: 1.08rem;
+    margin: 0;
+    font-weight: 700;
+  }
+  .header-actions button {
+    background: rgba(255,255,255,0.18);
+    border: 1px solid rgba(255,255,255,0.4);
+    color: #fff;
+    padding: 5px 10px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    margin-left: 6px;
+  }
+  .header-actions button:hover { background: rgba(255,255,255,0.3); }
+
+  /* Tabs */
+  .tabs {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    background: #fff;
+    border-bottom: 2px solid var(--border);
+  }
+  .tab-btn {
+    padding: 12px 6px;
+    border: none;
+    background: none;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: 0.2s;
+    text-align: center;
+    line-height: 1.3;
+  }
+  .tab-btn.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+    background: #ebf5fb;
+  }
+  @media (max-width: 680px) {
+    header {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 8px;
+      padding: 10px 12px;
+    }
+    header h1 {
+      font-size: 0.98rem;
+      text-align: center;
+    }
+    .header-actions {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .header-actions button {
+      margin-left: 0;
+      flex: 1;
+      min-width: 95px;
+      padding: 6px 8px;
+    }
+    .tabs {
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      padding: 8px;
+      background: #eaecee;
+    }
+    .tab-btn {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 6px;
+      font-size: 0.84rem;
+    }
+    .tab-btn.active {
+      border: 2px solid var(--primary);
+      background: #ebf5fb;
+      color: var(--primary);
+    }
+  }
+
+  .container {
+    max-width: 1140px;
+    margin: 0 auto;
+    padding: 14px;
+  }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 14px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .card-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--primary);
+    margin: 0 0 10px 0;
+    padding-bottom: 6px;
+    border-bottom: 2px solid #ebf5fb;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  /* Grid & Form */
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  @media (max-width: 820px) {
+    .grid-2 { grid-template-columns: 1fr; }
+  }
+  .form-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 8px;
+    align-items: center;
+  }
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 110px;
+  }
+  label {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    margin-bottom: 3px;
+  }
+  input, select, textarea {
+    padding: 8px 10px;
+    border: 1px solid #bdc3c7;
+    border-radius: 6px;
+    font-size: 0.94rem;
+    background: #fff;
+    font-family: inherit;
+  }
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--primary-light);
+    box-shadow: 0 0 0 2px rgba(46,134,193,0.15);
+  }
+
+  /* CSV / Excel Import Box */
+  .import-box {
+    background: #eafaf1;
+    border: 1px dashed #27ae60;
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 12px;
+  }
+  .import-box-title {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #1e8449;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .file-label-btn {
+    display: inline-block;
+    background: #1e8449;
+    color: #fff;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.84rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .file-label-btn:hover { background: #196f3d; }
+
+  /* Order Table */
+  table.order-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.84rem;
+  }
+  table.order-table th, table.order-table td {
+    border: 1px solid var(--border);
+    padding: 5px 4px;
+    text-align: center;
+  }
+  table.order-table th {
+    background: #eef3f7;
+    font-weight: 700;
+    font-size: 0.78rem;
+  }
+  table.order-table input, table.order-table select {
+    width: 100%;
+    padding: 4px 5px;
+    font-size: 0.85rem;
+  }
+  .same-surname-badge {
+    display: inline-block;
+    background: #e74c3c;
+    color: #fff;
+    font-size: 0.68rem;
+    padding: 1px 5px;
+    border-radius: 4px;
+    margin-left: 4px;
+    vertical-align: middle;
+  }
+
+  /* Buttons */
+  .btn {
+    padding: 10px 16px;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: 0.15s;
+  }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-primary:hover { background: var(--primary-light); }
+  .btn-accent { background: var(--accent); color: #fff; }
+  .btn-accent:hover { background: #e67e22; }
+  .btn-success { background: var(--success); color: #fff; }
+  .btn-outline { background: #fff; border: 1px solid #bdc3c7; color: var(--text); }
+  .btn-outline:hover { background: #f2f4f4; }
+  .btn-sm { padding: 6px 10px; font-size: 0.82rem; border-radius: 6px; }
+  .btn-block { width: 100%; }
+
+  /* Script Display Box */
+  .script-box {
+    background: #1c2833;
+    color: #ffffff;
+    border-radius: 12px;
+    padding: 18px;
+    margin-top: 12px;
+    position: relative;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+  }
+  .script-tag {
+    display: inline-block;
+    background: #f39c12;
+    color: #1c2833;
+    font-size: 0.78rem;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-bottom: 8px;
+  }
+  .script-text {
+    font-size: 1.25rem;
+    line-height: 1.8;
+    white-space: pre-wrap;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+  }
+  .script-note {
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px dashed rgba(255,255,255,0.25);
+    font-size: 0.82rem;
+    color: #f9e79f;
+  }
+  @media (max-width: 600px) {
+    .script-text { font-size: 1.12rem; }
+  }
+
+  /* Interactive Lineup Cards for Live Play */
+  .team-toggle {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .team-toggle button {
+    flex: 1;
+    padding: 10px;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    background: #fff;
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+  }
+  .team-toggle button.active {
+    border-color: var(--primary);
+    background: #ebf5fb;
+    color: var(--primary);
+  }
+
+  /* Quick Number Substitution Bar */
+  .quick-num-bar {
+    background: #fef5e7;
+    border: 1px solid #f5b041;
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 12px;
+  }
+  .quick-num-bar-title {
+    font-size: 0.86rem;
+    font-weight: 700;
+    color: #b9770e;
+    margin-bottom: 6px;
+  }
+
+  .player-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 6px;
+    background: #fff;
+    gap: 6px;
+  }
+  .player-row.changed {
+    background: #fef9e7;
+    border-color: #f39c12;
+  }
+  .player-row.ph-pr {
+    background: #fdedec;
+    border-color: #e74c3c;
+  }
+  .p-order {
+    width: 28px;
+    height: 28px;
+    background: var(--primary);
+    color: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+  }
+  .p-num-badge {
+    background: #eaecee;
+    color: #1c2833;
+    font-weight: 800;
+    padding: 2px 7px;
+    border-radius: 5px;
+    font-size: 0.85rem;
+    margin-right: 4px;
+  }
+  .p-info {
+    flex: 1;
+    min-width: 0;
+  }
+  .p-name {
+    font-weight: 700;
+    font-size: 0.96rem;
+  }
+  .p-kana {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: normal;
+  }
+  .p-sub {
+    font-size: 0.77rem;
+    color: var(--text-muted);
+  }
+  .p-pos-select {
+    width: 112px;
+    font-weight: 700;
+    padding: 6px;
+  }
+
+  /* Quick Action Grid */
+  .quick-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(165px, 1fr));
+    gap: 8px;
+  }
+  .quick-btn {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px;
+    text-align: left;
+    cursor: pointer;
+    transition: 0.15s;
+  }
+  .quick-btn:hover {
+    border-color: var(--primary-light);
+    background: #ebf5fb;
+  }
+  .quick-btn .q-title { font-weight: 700; font-size: 0.88rem; color: var(--primary); }
+  .quick-btn .q-desc { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+
+  /* Bench Chips in Modal */
+  .bench-chip-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(135px, 1fr));
+    gap: 6px;
+    max-height: 220px;
+    overflow-y: auto;
+    margin-top: 6px;
+    padding: 4px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: #fafafa;
+  }
+  .bench-chip {
+    padding: 7px 8px;
+    border: 1px solid #bdc3c7;
+    border-radius: 6px;
+    background: #fff;
+    text-align: left;
+    cursor: pointer;
+    font-size: 0.84rem;
+  }
+  .bench-chip:hover { border-color: var(--primary); background: #ebf5fb; }
+  .bench-chip.selected {
+    border: 2px solid var(--primary);
+    background: #d6eaf8;
+    font-weight: 700;
+  }
+
+  /* Modal */
+  .modal-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal {
+    background: #fff;
+    border-radius: 12px;
+    max-width: 500px;
+    width: 100%;
+    padding: 18px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .modal h3 { margin: 0 0 12px 0; color: var(--primary); }
+
+  .alert-info {
+    background: #eaf2f8;
+    border-left: 4px solid var(--primary-light);
+    padding: 8px 12px;
+    font-size: 0.83rem;
+    border-radius: 4px;
+    margin-bottom: 10px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>⚾ 区少連 場内アナウンス支援（25名メンバー表連携版）</h1>
+  <div class="header-actions">
+    <button style="background:#f39c12; border-color:#f39c12; color:#1c2833; font-weight:800;" onclick="openShareModal()">📱 スマホ引き継ぎ・共有</button>
+    <button onclick="loadSampleData()">サンプル入力</button>
+    <button onclick="resetAllData()">全リセット</button>
+  </div>
+</header>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('tab-setup', this)">① メンバー表読込・登録</button>
+  <button class="tab-btn" onclick="switchTab('tab-sub', this)">② 背番号交代・シート変更</button>
+  <button class="tab-btn" onclick="switchTab('tab-batter', this)">③ 打者・シート紹介</button>
+  <button class="tab-btn" onclick="switchTab('tab-flow', this)">④ 試合進行・定型文</button>
+</div>
+
+<div class="container">
+
+  <!-- ==================== TAB 1: SETUP & CSV IMPORT ==================== -->
+  <div id="tab-setup" class="tab-content active">
+    <div class="card">
+      <div class="card-title">試合基本情報・審判員</div>
+      <div class="form-row">
+        <div class="form-group" style="flex:2;">
+          <label>大会名（※1試合目のみ読み上げ）</label>
+          <input type="text" id="tournamentName" placeholder="例：令和8年度 幸区少年野球春季大会" oninput="saveState()">
+        </div>
+        <div class="form-group">
+          <label>試合区分</label>
+          <select id="gameNumber" onchange="saveState()">
+            <option value="第1試合">第1試合</option>
+            <option value="第2試合">第2試合</option>
+            <option value="第3試合">第3試合</option>
+            <option value="第4試合">第4試合</option>
+            <option value="3位決定戦">3位決定戦</option>
+            <option value="決勝戦">決勝戦</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>開始予定時刻</label>
+          <input type="text" id="startTime" placeholder="例：9時00分" oninput="saveState()">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>先攻チーム名</label>
+          <input type="text" id="awayTeamName" placeholder="CSV読込で自動反映" oninput="saveState()">
+        </div>
+        <div class="form-group" style="max-width:110px;">
+          <label>先攻ベンチ</label>
+          <select id="awayBench" onchange="syncBench('away')">
+            <option value="1">1塁側</option>
+            <option value="3" selected="">3塁側</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>後攻チーム名</label>
+          <input type="text" id="homeTeamName" placeholder="CSV読込で自動反映" oninput="saveState()">
+        </div>
+        <div class="form-group" style="max-width:110px;">
+          <label>後攻ベンチ</label>
+          <select id="homeBench" onchange="syncBench('home')">
+            <option value="1" selected="">1塁側</option>
+            <option value="3">3塁側</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group"><label>球審</label><input type="text" id="umpPlate" placeholder="苗字またはフルネーム" oninput="saveState()"></div>
+        <div class="form-group"><label>一塁塁審</label><input type="text" id="ump1B" oninput="saveState()"></div>
+        <div class="form-group"><label>二塁塁審（※3審制は空欄）</label><input type="text" id="ump2B" placeholder="空欄時は自動で3氏に切替" oninput="saveState()"></div>
+        <div class="form-group"><label>三塁塁審</label><input type="text" id="ump3B" oninput="saveState()"></div>
+      </div>
+    </div>
+
+    <div class="alert-info" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+      <div>
+        💡 <strong>Excelメンバー表（25名枠）との連携＆スマホ引き継ぎ：</strong><br>
+        CSV読込またはコピペでメンバーを登録後、右の<strong>「📱 スマホ引き継ぎ・共有」</strong>を押すと、アナウンス担当のお母様のスマホへ<strong>URL（QRコード）・LINE・Googleドライブ経由でそのままデータを引き継げます！</strong>
+      </div>
+      <button class="btn btn-accent btn-sm" onclick="openShareModal()" style="white-space:nowrap;">📱 スマホ引き継ぎ・共有を開く</button>
+    </div>
+
+    <div class="grid-2">
+      <!-- 先攻オーダー -->
+      <div class="card">
+        <div class="card-title">
+          <span>先攻 登録メンバー（最大25名）</span>
+          <span id="awaySameAlert" style="font-size:0.78rem; color:#e74c3c;">※同姓あり(たなか・かいの・わだ・たかはし)→フルネーム自動適用</span>
+        </div>
+
+        <div class="import-box">
+          <div class="import-box-title">
+            <span>📂 先攻チーム CSV一括読込</span>
+            <div>
+              <label class="file-label-btn">
+                CSVファイルを選択
+                <input type="file" accept=".csv,.txt" style="display:none;" onchange="handleCsvUpload(event, 'away')">
+              </label>
+              <button class="btn btn-outline btn-sm" onclick="openPasteModal('away')">📋 コピペ読込</button>
+            </div>
+          </div>
+          <div style="font-size:0.76rem; color:#1e8449;">※「CSV出力用データ」シートをCSV保存したファイルを選択してください。</div>
+        </div>
+
+        <div style="font-weight:700; font-size:0.85rem; color:var(--primary); margin-bottom:4px;">スタメン（1〜9番 ＋ 指名打者使用時の守備専任P）</div>
+        <table class="order-table">
+          <thead>
+            <tr><th style="width:34px;">打順</th><th style="width:92px;">守備</th><th style="width:54px;">背番</th><th>選手名（ひらがな：せい めい）</th></tr>
+          </thead>
+          <tbody id="awaySetupBody"><tr>
+        <td><strong title="">1</strong></td>
+        <td><select onchange="updateStarter('away', 0, 'pos', this.value)"><option value="ピッチャー">ピッチャー</option><option value="キャッチャー">キャッチャー</option><option value="ファースト">ファースト</option><option value="セカンド">セカンド</option><option value="サード">サード</option><option value="ショート" selected="">ショート</option><option value="レフト">レフト</option><option value="センター">センター</option><option value="ライト">ライト</option><option value="指名打者">指名打者</option></select></td>
+        <td><input type="text" value="6" placeholder="10" inputmode="numeric" onchange="updateStarter('away', 0, 'num', this.value)"></td>
+        <td>
+          <input type="text" value="たなか そういちろう" placeholder="やまだ たろう" onchange="updateStarter('away', 0, 'name', this.value)">
+          <span class="same-surname-badge">同姓フル</span>
+        </td>
+      </tr><tr>
+        <td><strong title="">2</strong></td>
+        <td><select onchange="updateStarter('away', 1, 'pos', this.value)"><option value="ピッチャー">ピッチャー</option><option value="キャッチャー">キャッチャー</option><option value="ファースト">ファースト</option><option value="セカンド" selected="">セカンド</option><option value="サード">サード</option><option value="ショート">ショート</option><option value="レフト">レフト</option><option value="センター">センター</option><option value="ライト">ライト</option><option value="指名打者">指名打者</option></select></td>
+        <td><input type="text" value="8" placeholder="10" inputmode="numeric" onchange="updateStarter('away', 1, 'num', this.value)"></td>
+        <td>
+          <input type="text" value="かいの はるた" placeholder="やまだ たろう" onchange="updateStarter('away', 1, 'name', this.value)">
+          <span class="same-surname-badge">同姓フル</span>
+        </td>
+      </tr><tr>
+        <td><strong title="">3</strong></td>
+        <td><select onchange="updateStarter('away', 2, 'pos', this.value)"><option value="ピッチャー">ピッチャー</option><option value="キャッチャー" selected="">キャッチャー</option><option value="ファースト">ファースト</option><option value="セカンド">セカンド</option><option value="サード">サード</option><option value="ショート">ショート</option><option value="レフト">レフト</option><option value="センター">センター</option><option value="ライト">ライト</option><option value="指名打者">指名打者</option></select></td>
+        <td><input type="text" value="9" placeholder="10" inputmode="numeric" onchange="updateStarter('away', 2, 'num', this.value)"></td>
+        <td>
+          <input type="text" value="たなか はるき" placeholder="やまだ たろう" onchange="updateStarter('away', 2, 'name', this.value)">
+          <span class="same-surname-badge">同姓フル</span>
+        </td>
+      </tr><tr>
+        <td><strong title="">4</strong></td>
+        <td><select onchange="updateStarter('away', 3, 'pos', this.value)"><option value="ピッチャー">ピッチャー</option><option value="キャッチャー">キャッチャー</option><option value="ファースト">ファースト</option><option value="セカンド">セカンド</option><option value="サード">サード</option><option value="ショート">ショート</option><option value="レフト">レフト</option><option value="センター">センター</option><option value="ライト" selected="">ライト</option><option value="指名打者">指名打者</option></select></td>
+        <td><input type="text" value="0" placeholder="10" inputmode="numeric" onchange="updateStarter('away', 3, 'num', this.value)"></td>
+        <td>
+          <input type="text" value="なかにし りく" placeholder="やまだ たろう" onchange="updateStarter('away', 3, 'name', this.value)">
+          
+        </td>
+      </tr><tr>
+        <td><strong title="">5</strong></td>
+        <td><select onchange="updateStarter('away', 4, 'pos', this.value)"><option value="ピッチャー" selected="">ピッチャー</option><option value="キャッチャー">キャッチャー</option><option value="ファースト">ファースト</option><option value="セカンド">セカンド</option><option value="サード">サード</option><option value="ショート">ショート</option><option value="レフト">レフト</option><option value="センター">センター</option><option value="ライト">ライト</option><option value="指名打者">指名打者</option></select></td>
+        <td><input type="text" value="3" placeholder="10" inputmode="numeric" onchange="updateStarter('away', 4, 'num', this.value)"></td>
+        <td>
+          <input type="text" value="たなせ しゅん" placeholder="やまだ たろう" onchange="updateStarter('away', 4, 'name', this.value)">
+          
+        </td>
+      </tr><tr>
+        <td><strong title="">6</strong></td>
+        <td><select onchange="updateStarter('away', 5, 'pos', this.value)"><option value="ピッチャー">ピッチャー</option><option value="キャッチャー">キャッチャー</option><option value="ファースト" selected="">ファースト</option><option value="セカンド">セカンド</option><option value="サード">サード</option><option value="ショート">ショート</option><option value="レフト">レフト</option><option value="センター">センター</option><option value="ライト">ライト</option><option value="指名打者">指名打者</option></select></td>
+        <td><input type="text" value="2" placeholder="10" inputmode="numeric" onchange="updateStarter('away', 5, 'num', this.value)"></td>
+        <td>
+          <input type="text" value="はせがわ りんたろう" placeholder="やまだ たろう" onchange="updateStarter('away', 5, 'name', this.value)">
+          
+        </td>
+      </tr><tr>
+        <td><strong title="">7</strong></td>
+        <td><select onchange="updateStarter('away', 6, 'pos', this.value)"><option value="ピッチャー">ピッチャー</option><option value="キャッチャー">キャッチャー</option><option value="ファースト">ファースト</option><option value="セカンド">セカンド</option><option value="サード" selected="">サード</option><option value="ショート">ショート</option><option value="レフト">レフト</option><option value="センター">センター</option><option value="ライト">ライト</option><option value="指名打者">指名打者</option></select></td>
+        <td><input type="text" value="5" placeholder="10" inputmode="numeric" onchange="updateStarter('away', 6, 'num', this.value)"></td>
+        <td>
+          <input type="text" value="もちづき ゆうた" placeholder="やまだ たろう" onchange="updateStarter('away', 6, 'name', this.value)">
+          
+        </td>
+      </tr><tr>
+        <td><strong title="">8</strong></td>
+        <td><select onchange="updateStarter('away', 7, 'pos', this.value)"><option value="ピッチャー">ピッチャー</option><option value="キャッチャー">キャッチャー</option><option value="ファースト">ファースト</option><option value="セカンド">セカンド</option><option value="サード">サード</option><option value="ショート">ショート</option><option value="レフト" selected="">レフト</option><option value="センター">センター</option><option value="ライト">ライト</option><option value="指名打者">指名打者</option></select></td>
+        <td><input type="text" value="7" placeholder="10" inputmode="numeric" onchange="updateStarter('away', 7, 'num', this.value)"></td>
+        <td>
+          <input type="text" value="おざき ゆうま" placeholder="やまだ たろう" onchange="updateStarter('away', 7, 'name', this.value)">
+          
+        </td>
+      </tr><tr>
+        <td><strong title="">9</strong></td>
+        <td><select onchange="updateStarter('away', 8, 'pos', this.value)"><option value="ピッチャー">ピッチャー</option><option value="キャッチャー">キャッチャー</option><option value="ファースト">ファースト</option><option value="セカンド">セカンド</option><option value="サード">サード</option><option value="ショート">ショート</option><option value="レフト">レフト</option><option value="センター" selected="">センター</option><option value="ライト">ライト</option><option value="指名打者">指名打者</option></select></td>
+        <td><input type="text" value="4" placeholder="10" inputmode="numeric" onchange="updateStarter('away', 8, 'num', this.value)"></td>
+        <td>
+          <input type="text" value="たにぐち けい" placeholder="やまだ たろう" onchange="updateStarter('away', 8, 'name', this.value)">
+          
+        </td>
+      </tr><tr style="background: rgb(235, 245, 251);">
+        <td><strong title="指名打者(DH)使用時の守備専任ピッチャー枠">P<br><span style="font-size:0.65rem;font-weight:normal;">(DH投手)</span></strong></td>
+        <td><select onchange="updateStarter('away', 9, 'pos', this.value)"><option value="ピッチャー" selected="">ピッチャー</option><option value="キャッチャー">キャッチャー</option><option value="ファースト">ファースト</option><option value="セカンド">セカンド</option><option value="サード">サード</option><option value="ショート">ショート</option><option value="レフト">レフト</option><option value="センター">センター</option><option value="ライト">ライト</option><option value="指名打者">指名打者</option></select></td>
+        <td><input type="text" value="" placeholder="DH時" inputmode="numeric" onchange="updateStarter('away', 9, 'num', this.value)"></td>
+        <td>
+          <input type="text" value="" placeholder="DH使用時の投手名（ひらがな・通常は空欄）" onchange="updateStarter('away', 9, 'name', this.value)">
+          
+        </td>
+      </tr></tbody>
+        </table>
+
+        <div style="margin-top:12px; font-weight:700; font-size:0.85rem; color:var(--primary); margin-bottom:4px;">
+          控え選手（ベンチ入り・最大16名）
+        </div>
+        <table class="order-table">
+          <thead>
+            <tr><th style="width:34px;">控</th><th style="width:54px;">背番</th><th>控え選手名（ひらがな：せい めい）</th></tr>
+          </thead>
+          <tbody id="awayBenchBody"><tr>
+        <td>控1</td>
+        <td><input type="text" value="10" placeholder="15" inputmode="numeric" onchange="updateBench('away', 0, 'num', this.value)"></td>
+        <td><input type="text" value="みぞぐち なな" placeholder="こばやし つばさ" onchange="updateBench('away', 0, 'name', this.value)"></td>
+      </tr><tr>
+        <td>控2</td>
+        <td><input type="text" value="1" placeholder="15" inputmode="numeric" onchange="updateBench('away', 1, 'num', this.value)"></td>
+        <td><input type="text" value="わだ しゅうと" placeholder="こばやし つばさ" onchange="updateBench('away', 1, 'name', this.value)"></td>
+      </tr><tr>
+        <td>控3</td>
+        <td><input type="text" value="11" placeholder="15" inputmode="numeric" onchange="updateBench('away', 2, 'num', this.value)"></td>
+        <td><input type="text" value="やすだ たけひろ" placeholder="こばやし つばさ" onchange="updateBench('away', 2, 'name', this.value)"></td>
+      </tr><tr>
+        <td>控4</td>
+        <td><input type="text" value="12" placeholder="15" inputmode="numeric" onchange="updateBench('away', 3, 'num', this.value)"></td>
+        <td><input type="text" value="こみやま しゅんすけ" placeholder="こばやし つばさ" onchange="updateBench('away', 3, 'name', this.value)"></td>
+      </tr><tr>
+        <td>控5</td>
+        <td><input type="text" value="13" placeholder="15" inputmode="numeric" onchange="updateBench('away', 4, 'num', this.value)"></td>
+        <td><input type="text" value="きた ゆうしん" placeholder="こばやし つばさ" onchange="updateBench('away', 4, 'name', this.value)"></td>
+      </tr><tr>
+        <td>控6</td>
+        <td><input type="text" value="14" placeholder="15" inputmode="numeric" onchange="updateBench('away', 5, 'num', this.value)"></td>
+        <td><input type="text" value="いわはら しゅい" placeholder="こばやし つばさ" onchange="updateBench('away', 5, 'name', this.value)"></td>
+      </tr><tr>
+        <td>控7</td>
+        <td><input type="text" value="15" placeholder="15" inputmode="numeric" onchange="updateBench('away', 6, 'num', this.value)"></td>
+        <td><input type="text" value="わだ かいと" placeholder="こばやし つばさ" onchange="updateBench('away', 6, 'name', this.value)"></td>
+      </tr><tr>
+        <td>控8</td>
+        <td><input type="text" value="16" placeholder="15" inputmode="numeric" onchange="updateBench('away', 7, 'num', this.value)"></td>
+        <td><input type="text" value="たかはし けいと" placeholder="こばやし つばさ" onchange="updateBench('away', 7, 'name', this.value)"></td>
+      </tr><tr>
+        <td>控9</td>
+        <td><input type="text" value="17" placeholder="15" inputmode="numeric" onchange="updateBench('away', 8, 'num', this.value)"></td>
+        <td><input type="text" value="ささき ゆうだい" placeholder="こばやし つばさ" onchange="updateBench('away', 8, 'name', this.value)"></td>
+      </tr><tr>
+        <td>控10</td>
+        <td><input type="text" value="18" placeholder="15" inputmode="numeric" onchange="updateBench('away', 9, 'num', this.value)"></td>
+        <td><input type="text" value="かいの ひなた" placeholder="こばやし つばさ" onchange="updateBench('away', 9, 'name', this.value)"></td>
+      </tr><tr>
+        <td>控11</td>
+        <td><input type="text" value="19" placeholder="15" inputmode="numeric" onchange="updateBench('away', 10, 'num', this.value)"></td>
+        <td><input type="text" value="せきど はると" placeholder="こばやし つばさ" onchange="updateBench('away', 10, 'name', this.value)"></td>
+      </tr><tr>
+        <td>控12</td>
+        <td><input type="text" value="20" placeholder="15" inputmode="numeric" onchange="updateBench('away', 11, 'num', this.value)"></td>
+        <td><input type="text" value="しもまえ とうみ" placeholder="こばやし つばさ" onchange="updateBench('away', 11, 'name', this.value)"></td>
+      </tr><tr>
+        <td>控13</td>
+        <td><input type="text" value="21" placeholder="15" inputmode="numeric" onchange="updateBench('away', 12, 'num', this.value)"></td>
+        <td><input type="text" value="かめしま ひかる" placeholder="こばやし つばさ" onchange="updateBench('away', 12, 'name', this.value)"></td>
+      </tr><tr>
+        <td>控14</td>
+        <td><input type="text" value="22" placeholder="15" inputmode="numeric" onchange="updateBench('away', 13, 'num', this.value)"></td>
+        <td><input type="text" value="もりた かいと" placeholder="こばやし つばさ" onchange="updateBench('away', 13, 'name', this.value)"></td>
+      </tr><tr>
+        <td>控15</td>
+        <td><input type="text" value="32" placeholder="15" inputmode="numeric" onchange="updateBench('away', 14, 'num', this.value)"></td>
+        <td><input type="text" value="たかはし かんだい" placeholder="こばやし つばさ" onchange="updateBench('away', 14, 'name', this.value)"></td>
+      </tr><tr>
+        <td>控16</td>
+        <td><input type="text" value="" placeholder="15" inputmode="numeric" onchange="updateBench('away', 15, 'num', this.value)"></td>
+        <td><input type="text" value="" placeholder="こばやし つばさ" onchange="updateBench('away', 15, 'name', this.value)"></td>
+      </tr></tbody>
+        </table>
+      </div>
+
+      <!-- 後攻オーダー -->
+      <div class="card">
+        <div class="card-title">
+          <span>後攻 登録メンバー（最大25名）</span>
+          <span id="homeSameAlert" style="font-size:0.78rem; color:#e74c3c;"></span>
+        </div>
+
+        <div class="import-box">
+          <div class="import-box-title">
+            <span>📂 後攻チーム CSV一括読込</span>
+            <div>
+              <label class="file-label-btn">
+                CSVファイルを選択
+                <input type="file" accept=".csv,.txt" style="display:none;" onchange="handleCsvUpload(event, 'home')">
+              </label>
+              <button class="btn btn-outline btn-sm" onclick="openPasteModal('home')">📋 コピペ読込</button>
+            </div>
+          </div>
+          <div style="font-size:0.76rem; color:#1e8449;">※「CSV出力用データ」シートをCSV保存したファイルを選択してください。</div>
+        </div>
+
+        <div style="font-weight:700; font-size:0.85rem; color:var(--primary); margin-bottom:4px;">スタメン（1〜9番 ＋ 指名打者使用時の守備専任P）</div>
+        <table class="order-table">
+          <thead>
+            <tr><th style="width:34px;">打順</th><th style="width:92px;">守備</th><th style="width:54px;">背番</th><th>選手名（ひらがな：せい めい）</th></tr>
+          </thead>
+          <tbody id="homeSetupBody"><tr>
+        <td><strong title="">1</strong></td>
+        <td><select onchange="updateStarter('home', 0, 'pos', this.value)"><option value="ピッチャー" selected="">ピッチャー</option><option value="キャッチャー">キャッチャー</option><option value="ファースト">ファースト</option><option value="セカンド">セカンド</option><option value="サード">サード</option><option value="ショート">ショート</option><option value="レフト">レフト</option><option value="センター">センター</option><option value="ライト">ライト</option><option value="指名打者">指名打者</option></select></td>
+        <td><input type="text" value="" placeholder="10" inputmode="numeric" onchange="updateStarter('home', 0, 'num', this.value)"></td>
+        <td>
+          <input type="text" value="" placeholder="やまだ たろう" onchange="updateStarter('home', 0, 'name', this.value)">
+          
+        </td>
+      </tr><tr>
+        <td><strong title="">2</strong></td>
+        <td><select onchange="updateStarter('home', 1, 'pos', this.value)"><option value="ピッチャー">ピッチャー</option><option value="キャッチャー" selected="">キャッチャー</option><option value="ファースト">ファースト</option><option value="セカンド">セカンド</option><option value="サード">サード</option><option value="ショート">ショート</option><option value="レフト">レフト</option><option value="センター">センター</option><option value="ライト">ライト</option><option value="指名打者">指名打者</option></select></td>
+        <td><input type="text" value="" placeholder="10" inputmode="numeric" onchange="updateStarter('home', 1, 'num', this.value)"></td>
+        <td>
+          <input type="text" value="" placeholder="やまだ たろう" onchange="updateStarter('home', 1, 'name', this.value)">
+          
+        </td>
+      </tr><tr>
+        <td><strong title="">3</strong></td>
+        <td><select onchange="updateStarter('home', 2, 'pos', this.value)"><option value="ピッチャー">ピッチャー</option><option value="キャッチャー">キャッチャー</option><option value="ファースト" selected="">ファースト</option><option value="セカンド">セカンド</option><option value="サード">サード</option><option value="ショート">ショート</option><option value="レフト">レフト</option><option value="センター">センター</option><option value="ライト">ライト</option><option value="指名打者">指名打者</option></select></td>
+        <td><input type="text" value="" placeholder="10" inputmode="numeric" onchange="updateStarter('home', 2, 'num', this.value)"></td>
+        <td>
+          <input type="text" value="" placeholder="やまだ たろう" onchange="updateStarter('home', 2, 'name', this.value)">
+          
+        </td>
+      </tr><tr>
+        <td><strong title="">4</strong></td>
+        <td><select onchange="updateStarter('home', 3, 'pos', this.value)"><option value="ピッチャー">ピッチャー</option><option value="キャッチャー">キャッチャー</option><option value="ファースト">ファースト</option><option value="セカンド" selected="">セカンド</option><option value="サード">サード</option><option value="ショート">ショート</option><option value="レフト">レフト</option><option value="センター">センター</option><option value="ライト">ライト</option><option value="指名打者">指名打者</option></select></td>
+        <td><input type="text" value="" placeholder="10" inputmode="numeric" onchange="updateStarter('home', 3, 'num', this.value)"></td>
+        <td>
+          <input type="text" value="" placeholder="やまだ たろう" onchange="updateStarter('home', 3, 'name', this.value)">
+          
+        </td>
+      </tr><tr>
+        <td><strong title="">5</strong></td>
+        <td><select onchange="updateStarter('home', 4, 'pos', this.value)"><option value="ピッチャー">ピッチャー</option><option value="キャッチャー">キャッチャー</option><option value="ファースト">ファースト</option><option value="セカンド">セカンド</option><option value="サード" selected="">サード</option><option value="ショート">ショート</option><option value="レフト">レフト</option><option value="センター">センター</option><option value="ライト">ライト</option><option value="指名打者">指名打者</option></select></td>
+        <td><input type="text" value="" placeholder="10" inputmode="numeric" onchange="updateStarter('home', 4, 'num', this.value)"></td>
+        <td>
+          <input type="text" value="" placeholder="やまだ たろう" onchange="updateStarter('home', 4, 'name', this.value)">
+          
+        </td>
+      </tr><tr>
+        <td><strong title="">6</strong></td>
+        <td><select onchange="updateStarter('home', 5, 'pos', this.value)"><option value="ピッチャー">ピッチャー</option><option value="キャッチャー">キャッチャー</option><option value="ファースト">ファースト</option><option value="セカンド">セカンド</option><option value="サード">サード</option><option value="ショート" selected="">ショート</option><option value="レフト">レフト</option><option value="センター">センター</option><option value="ライト">ライト</option><option value="指名打者">指名打者</option></select></td>
+        <td><input type="text" value="" placeholder="10" inputmode="numeric" onchange="updateStarter('home', 5, 'num', this.value)"></td>
+        <td>
+          <input type="text" value="" placeholder="やまだ たろう" onchange="updateStarter('home', 5, 'name', this.value)">
+          
+        </td>
+      </tr><tr>
+        <td><strong title="">7</strong></td>
+        <td><select onchange="updateStarter('home', 6, 'pos', this.value)"><option value="ピッチャー">ピッチャー</option><option value="キャッチャー">キャッチャー</option><option value="ファースト">ファースト</option><option value="セカンド">セカンド</option><option value="サード">サード</option><option value="ショート">ショート</option><option value="レフト" selected="">レフト</option><option value="センター">センター</option><option value="ライト">ライト</option><option value="指名打者">指名打者</option></select></td>
+        <td><input type="text" value="" placeholder="10" inputmode="numeric" onchange="updateStarter('home', 6, 'num', this.value)"></td>
+        <td>
+          <input type="text" value="" placeholder="やまだ たろう" onchange="updateStarter('home', 6, 'name', this.value)">
+          
+        </td>
+      </tr><tr>
+        <td><strong title="">8</strong></td>
+        <td><select onchange="updateStarter('home', 7, 'pos', this.value)"><option value="ピッチャー">ピッチャー</option><option value="キャッチャー">キャッチャー</option><option value="ファースト">ファースト</option><option value="セカンド">セカンド</option><option value="サード">サード</option><option value="ショート">ショート</option><option value="レフト">レフト</option><option value="センター" selected="">センター</option><option value="ライト">ライト</option><option value="指名打者">指名打者</option></select></td>
+        <td><input type="text" value="" placeholder="10" inputmode="numeric" onchange="updateStarter('home', 7, 'num', this.value)"></td>
+        <td>
+          <input type="text" value="" placeholder="やまだ たろう" onchange="updateStarter('home', 7, 'name', this.value)">
+          
+        </td>
+      </tr><tr>
+        <td><strong title="">9</strong></td>
+        <td><select onchange="updateStarter('home', 8, 'pos', this.value)"><option value="ピッチャー">ピッチャー</option><option value="キャッチャー">キャッチャー</option><option value="ファースト">ファースト</option><option value="セカンド">セカンド</option><option value="サード">サード</option><option value="ショート">ショート</option><option value="レフト">レフト</option><option value="センター">センター</option><option value="ライト" selected="">ライト</option><option value="指名打者">指名打者</option></select></td>
+        <td><input type="text" value="" placeholder="10" inputmode="numeric" onchange="updateStarter('home', 8, 'num', this.value)"></td>
+        <td>
+          <input type="text" value="" placeholder="やまだ たろう" onchange="updateStarter('home', 8, 'name', this.value)">
+          
+        </td>
+      </tr><tr style="background: rgb(235, 245, 251);">
+        <td><strong title="指名打者(DH)使用時の守備専任ピッチャー枠">P<br><span style="font-size:0.65rem;font-weight:normal;">(DH投手)</span></strong></td>
+        <td><select onchange="updateStarter('home', 9, 'pos', this.value)"><option value="ピッチャー" selected="">ピッチャー</option><option value="キャッチャー">キャッチャー</option><option value="ファースト">ファースト</option><option value="セカンド">セカンド</option><option value="サード">サード</option><option value="ショート">ショート</option><option value="レフト">レフト</option><option value="センター">センター</option><option value="ライト">ライト</option><option value="指名打者">指名打者</option></select></td>
+        <td><input type="text" value="" placeholder="DH時" inputmode="numeric" onchange="updateStarter('home', 9, 'num', this.value)"></td>
+        <td>
+          <input type="text" value="" placeholder="DH使用時の投手名（ひらがな・通常は空欄）" onchange="updateStarter('home', 9, 'name', this.value)">
+          
+        </td>
+      </tr></tbody>
+        </table>
+
+        <div style="margin-top:12px; font-weight:700; font-size:0.85rem; color:var(--primary); margin-bottom:4px;">
+          控え選手（ベンチ入り・最大16名）
+        </div>
+        <table class="order-table">
+          <thead>
+            <tr><th style="width:34px;">控</th><th style="width:54px;">背番</th><th>控え選手名（ひらがな：せい めい）</th></tr>
+          </thead>
+          <tbody id="homeBenchBody"><tr>
+        <td>控1</td>
+        <td><input type="text" value="" placeholder="15" inputmode="numeric" onchange="updateBench('home', 0, 'num', this.value)"></td>
+        <td><input type="text" value="" placeholder="こばやし つばさ" onchange="updateBench('home', 0, 'name', this.value)"></td>
+      </tr><tr>
+        <td>控2</td>
+        <td><input type="text" value="" placeholder="15" inputmode="numeric" onchange="updateBench('home', 1, 'num', this.value)"></td>
+        <td><input type="text" value="" placeholder="こばやし つばさ" onchange="updateBench('home', 1, 'name', this.value)"></td>
+      </tr><tr>
+        <td>控3</td>
+        <td><input type="text" value="" placeholder="15" inputmode="numeric" onchange="updateBench('home', 2, 'num', this.value)"></td>
+        <td><input type="text" value="" placeholder="こばやし つばさ" onchange="updateBench('home', 2, 'name', this.value)"></td>
+      </tr><tr>
+        <td>控4</td>
+        <td><input type="text" value="" placeholder="15" inputmode="numeric" onchange="updateBench('home', 3, 'num', this.value)"></td>
+        <td><input type="text" value="" placeholder="こばやし つばさ" onchange="updateBench('home', 3, 'name', this.value)"></td>
+      </tr><tr>
+        <td>控5</td>
+        <td><input type="text" value="" placeholder="15" inputmode="numeric" onchange="updateBench('home', 4, 'num', this.value)"></td>
+        <td><input type="text" value="" placeholder="こばやし つばさ" onchange="updateBench('home', 4, 'name', this.value)"></td>
+      </tr><tr>
+        <td>控6</td>
+        <td><input type="text" value="" placeholder="15" inputmode="numeric" onchange="updateBench('home', 5, 'num', this.value)"></td>
+        <td><input type="text" value="" placeholder="こばやし つばさ" onchange="updateBench('home', 5, 'name', this.value)"></td>
+      </tr><tr>
+        <td>控7</td>
+        <td><input type="text" value="" placeholder="15" inputmode="numeric" onchange="updateBench('home', 6, 'num', this.value)"></td>
+        <td><input type="text" value="" placeholder="こばやし つばさ" onchange="updateBench('home', 6, 'name', this.value)"></td>
+      </tr><tr>
+        <td>控8</td>
+        <td><input type="text" value="" placeholder="15" inputmode="numeric" onchange="updateBench('home', 7, 'num', this.value)"></td>
+        <td><input type="text" value="" placeholder="こばやし つばさ" onchange="updateBench('home', 7, 'name', this.value)"></td>
+      </tr><tr>
+        <td>控9</td>
+        <td><input type="text" value="" placeholder="15" inputmode="numeric" onchange="updateBench('home', 8, 'num', this.value)"></td>
+        <td><input type="text" value="" placeholder="こばやし つばさ" onchange="updateBench('home', 8, 'name', this.value)"></td>
+      </tr><tr>
+        <td>控10</td>
+        <td><input type="text" value="" placeholder="15" inputmode="numeric" onchange="updateBench('home', 9, 'num', this.value)"></td>
+        <td><input type="text" value="" placeholder="こばやし つばさ" onchange="updateBench('home', 9, 'name', this.value)"></td>
+      </tr><tr>
+        <td>控11</td>
+        <td><input type="text" value="" placeholder="15" inputmode="numeric" onchange="updateBench('home', 10, 'num', this.value)"></td>
+        <td><input type="text" value="" placeholder="こばやし つばさ" onchange="updateBench('home', 10, 'name', this.value)"></td>
+      </tr><tr>
+        <td>控12</td>
+        <td><input type="text" value="" placeholder="15" inputmode="numeric" onchange="updateBench('home', 11, 'num', this.value)"></td>
+        <td><input type="text" value="" placeholder="こばやし つばさ" onchange="updateBench('home', 11, 'name', this.value)"></td>
+      </tr><tr>
+        <td>控13</td>
+        <td><input type="text" value="" placeholder="15" inputmode="numeric" onchange="updateBench('home', 12, 'num', this.value)"></td>
+        <td><input type="text" value="" placeholder="こばやし つばさ" onchange="updateBench('home', 12, 'name', this.value)"></td>
+      </tr><tr>
+        <td>控14</td>
+        <td><input type="text" value="" placeholder="15" inputmode="numeric" onchange="updateBench('home', 13, 'num', this.value)"></td>
+        <td><input type="text" value="" placeholder="こばやし つばさ" onchange="updateBench('home', 13, 'name', this.value)"></td>
+      </tr><tr>
+        <td>控15</td>
+        <td><input type="text" value="" placeholder="15" inputmode="numeric" onchange="updateBench('home', 14, 'num', this.value)"></td>
+        <td><input type="text" value="" placeholder="こばやし つばさ" onchange="updateBench('home', 14, 'name', this.value)"></td>
+      </tr><tr>
+        <td>控16</td>
+        <td><input type="text" value="" placeholder="15" inputmode="numeric" onchange="updateBench('home', 15, 'num', this.value)"></td>
+        <td><input type="text" value="" placeholder="こばやし つばさ" onchange="updateBench('home', 15, 'name', this.value)"></td>
+      </tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== TAB 2: SUBSTITUTION & SHEET CHANGE ==================== -->
+  <div id="tab-sub" class="tab-content">
+    <div class="team-toggle">
+      <button id="btnSubAway" class="active" onclick="selectSubTeam('away')">先攻：<span id="lblSubAway">パークシティクーガーズ</span></button>
+      <button id="btnSubHome" onclick="selectSubTeam('home')">後攻：<span id="lblSubHome">小倉少年野球部</span></button>
+    </div>
+
+    <div class="grid-2">
+      <!-- Left: Quick Number Sub & Lineup -->
+      <div class="card">
+        <div class="card-title">
+          <span>現在のオーダー（背番号でクイック交代）</span>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <button class="btn btn-outline btn-sm" id="btnDhRelease" style="border-color:#2e86c1; color:#1b4f72;" onclick="openDhReleaseModal()">🔄 DH解除</button>
+            <button class="btn btn-outline btn-sm" onclick="undoLastChange()" title="直前に行った操作（守備位置変更・選手交代・代打・代走）を1つ前に戻します">↩ 1つ戻す</button>
+            <button class="btn btn-outline btn-sm" style="border-color:#e74c3c; color:#c0392b;" onclick="discardPendingChanges()" title="このイニングで変更した選手交代・代打・代走・守備位置をすべて変更前の元の状態に戻します">変更前に戻す</button>
+          </div>
+        </div>
+
+        <!-- Quick Substitution by Jersey Number -->
+        <div class="quick-num-bar">
+          <div class="quick-num-bar-title">⚡ 背番号クイック交代（審判から背番号で告げられた時）</div>
+          <div class="form-row" style="margin-bottom:0;">
+            <div class="form-group" style="max-width:95px;">
+              <label>種別</label>
+              <select id="quickSubType" onchange="toggleQuickRunnerBase()">
+                <option value="DEF">守備交代</option>
+                <option value="PH">代打</option>
+                <option value="PR">代走</option>
+              </select>
+            </div>
+            <div class="form-group" id="quickRunnerBaseWrap" style="display:none; max-width:95px;">
+              <label>塁</label>
+              <select id="quickRunnerBase">
+                <option value="ファースト">1塁走者</option>
+                <option value="セカンド">2塁走者</option>
+                <option value="サード">3塁走者</option>
+              </select>
+            </div>
+            <div class="form-group" style="max-width:85px;">
+              <label>退く背番号</label>
+              <input type="text" id="quickOutNum" placeholder="例: 8" inputmode="numeric">
+            </div>
+            <div style="font-weight:bold; padding-top:16px;">➡</div>
+            <div class="form-group" style="max-width:85px;">
+              <label>入る背番号</label>
+              <input type="text" id="quickInNum" placeholder="例: 12" inputmode="numeric">
+            </div>
+            <div style="padding-top:16px;">
+              <button class="btn btn-primary btn-sm" onclick="executeQuickNumberSub()">反映</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="liveOrderList"><div class="player-row">
+      <div class="p-order" style="" title="">1</div>
+      <div class="p-info">
+        <div class="p-name">
+          <span class="p-num-badge">#6</span>たなか そういちろう
+          
+          
+        </div>
+        <div class="p-sub">現在: ショート</div>
+      </div>
+      <select class="p-pos-select" onchange="changePendingPos(0, this.value)">
+        <option value="ピッチャー">ピッチャー</option><option value="キャッチャー">キャッチャー</option><option value="ファースト">ファースト</option><option value="セカンド">セカンド</option><option value="サード">サード</option><option value="ショート" selected="">ショート</option><option value="レフト">レフト</option><option value="センター">センター</option><option value="ライト">ライト</option><option value="指名打者">指名打者</option>
+      </select>
+      <button class="btn btn-outline btn-sm" onclick="openSubModal(0)">交代/代打</button>
+      
+    </div><div class="player-row">
+      <div class="p-order" style="" title="">2</div>
+      <div class="p-info">
+        <div class="p-name">
+          <span class="p-num-badge">#8</span>かいの はるた
+          
+          
+        </div>
+        <div class="p-sub">現在: セカンド</div>
+      </div>
+      <select class="p-pos-select" onchange="changePendingPos(1, this.value)">
+        <option value="ピッチャー">ピッチャー</option><option value="キャッチャー">キャッチャー</option><option value="ファースト">ファースト</option><option value="セカンド" selected="">セカンド</option><option value="サード">サード</option><option value="ショート">ショート</option><option value="レフト">レフト</option><option value="センター">センター</option><option value="ライト">ライト</option><option value="指名打者">指名打者</option>
+      </select>
+      <button class="btn btn-outline btn-sm" onclick="openSubModal(1)">交代/代打</button>
+      
+    </div><div class="player-row">
+      <div class="p-order" style="" title="">3</div>
+      <div class="p-info">
+        <div class="p-name">
+          <span class="p-num-badge">#9</span>たなか はるき
+          
+          
+        </div>
+        <div class="p-sub">現在: キャッチャー</div>
+      </div>
+      <select class="p-pos-select" onchange="changePendingPos(2, this.value)">
+        <option value="ピッチャー">ピッチャー</option><option value="キャッチャー" selected="">キャッチャー</option><option value="ファースト">ファースト</option><option value="セカンド">セカンド</option><option value="サード">サード</option><option value="ショート">ショート</option><option value="レフト">レフト</option><option value="センター">センター</option><option value="ライト">ライト</option><option value="指名打者">指名打者</option>
+      </select>
+      <button class="btn btn-outline btn-sm" onclick="openSubModal(2)">交代/代打</button>
+      
+    </div><div class="player-row">
+      <div class="p-order" style="" title="">4</div>
+      <div class="p-info">
+        <div class="p-name">
+          <span class="p-num-badge">#0</span>なかにし りく
+          
+          
+        </div>
+        <div class="p-sub">現在: ライト</div>
+      </div>
+      <select class="p-pos-select" onchange="changePendingPos(3, this.value)">
+        <option value="ピッチャー">ピッチャー</option><option value="キャッチャー">キャッチャー</option><option value="ファースト">ファースト</option><option value="セカンド">セカンド</option><option value="サード">サード</option><option value="ショート">ショート</option><option value="レフト">レフト</option><option value="センター">センター</option><option value="ライト" selected="">ライト</option><option value="指名打者">指名打者</option>
+      </select>
+      <button class="btn btn-outline btn-sm" onclick="openSubModal(3)">交代/代打</button>
+      
+    </div><div class="player-row">
+      <div class="p-order" style="" title="">5</div>
+      <div class="p-info">
+        <div class="p-name">
+          <span class="p-num-badge">#3</span>たなせ しゅん
+          
+          
+        </div>
+        <div class="p-sub">現在: ピッチャー</div>
+      </div>
+      <select class="p-pos-select" onchange="changePendingPos(4, this.value)">
+        <option value="ピッチャー" selected="">ピッチャー</option><option value="キャッチャー">キャッチャー</option><option value="ファースト">ファースト</option><option value="セカンド">セカンド</option><option value="サード">サード</option><option value="ショート">ショート</option><option value="レフト">レフト</option><option value="センター">センター</option><option value="ライト">ライト</option><option value="指名打者">指名打者</option>
+      </select>
+      <button class="btn btn-outline btn-sm" onclick="openSubModal(4)">交代/代打</button>
+      
+    </div><div class="player-row">
+      <div class="p-order" style="" title="">6</div>
+      <div class="p-info">
+        <div class="p-name">
+          <span class="p-num-badge">#2</span>はせがわ りんたろう
+          
+          
+        </div>
+        <div class="p-sub">現在: ファースト</div>
+      </div>
+      <select class="p-pos-select" onchange="changePendingPos(5, this.value)">
+        <option value="ピッチャー">ピッチャー</option><option value="キャッチャー">キャッチャー</option><option value="ファースト" selected="">ファースト</option><option value="セカンド">セカンド</option><option value="サード">サード</option><option value="ショート">ショート</option><option value="レフト">レフト</option><option value="センター">センター</option><option value="ライト">ライト</option><option value="指名打者">指名打者</option>
+      </select>
+      <button class="btn btn-outline btn-sm" onclick="openSubModal(5)">交代/代打</button>
+      
+    </div><div class="player-row">
+      <div class="p-order" style="" title="">7</div>
+      <div class="p-info">
+        <div class="p-name">
+          <span class="p-num-badge">#5</span>もちづき ゆうた
+          
+          
+        </div>
+        <div class="p-sub">現在: サード</div>
+      </div>
+      <select class="p-pos-select" onchange="changePendingPos(6, this.value)">
+        <option value="ピッチャー">ピッチャー</option><option value="キャッチャー">キャッチャー</option><option value="ファースト">ファースト</option><option value="セカンド">セカンド</option><option value="サード" selected="">サード</option><option value="ショート">ショート</option><option value="レフト">レフト</option><option value="センター">センター</option><option value="ライト">ライト</option><option value="指名打者">指名打者</option>
+      </select>
+      <button class="btn btn-outline btn-sm" onclick="openSubModal(6)">交代/代打</button>
+      
+    </div><div class="player-row">
+      <div class="p-order" style="" title="">8</div>
+      <div class="p-info">
+        <div class="p-name">
+          <span class="p-num-badge">#7</span>おざき ゆうま
+          
+          
+        </div>
+        <div class="p-sub">現在: レフト</div>
+      </div>
+      <select class="p-pos-select" onchange="changePendingPos(7, this.value)">
+        <option value="ピッチャー">ピッチャー</option><option value="キャッチャー">キャッチャー</option><option value="ファースト">ファースト</option><option value="セカンド">セカンド</option><option value="サード">サード</option><option value="ショート">ショート</option><option value="レフト" selected="">レフト</option><option value="センター">センター</option><option value="ライト">ライト</option><option value="指名打者">指名打者</option>
+      </select>
+      <button class="btn btn-outline btn-sm" onclick="openSubModal(7)">交代/代打</button>
+      
+    </div><div class="player-row">
+      <div class="p-order" style="" title="">9</div>
+      <div class="p-info">
+        <div class="p-name">
+          <span class="p-num-badge">#4</span>たにぐち けい
+          
+          
+        </div>
+        <div class="p-sub">現在: センター</div>
+      </div>
+      <select class="p-pos-select" onchange="changePendingPos(8, this.value)">
+        <option value="ピッチャー">ピッチャー</option><option value="キャッチャー">キャッチャー</option><option value="ファースト">ファースト</option><option value="セカンド">セカンド</option><option value="サード">サード</option><option value="ショート">ショート</option><option value="レフト">レフト</option><option value="センター" selected="">センター</option><option value="ライト">ライト</option><option value="指名打者">指名打者</option>
+      </select>
+      <button class="btn btn-outline btn-sm" onclick="openSubModal(8)">交代/代打</button>
+      
+    </div></div>
+
+        <div style="display:flex; gap:8px; margin-top:12px;">
+          <button class="btn btn-accent btn-block" onclick="generateChangeAnnouncement()">📢 変更アナウンスを自動生成</button>
+        </div>
+      </div>
+
+      <!-- Right: Generated Script -->
+      <div class="card">
+        <div class="card-title">
+          <span>自動判定＆読み上げ原稿（同イニング追記対応）</span>
+          <div style="display:flex; gap:6px;">
+            <button class="btn btn-outline btn-sm" onclick="clearOffenseLogs()" title="代打・代走の履歴表示だけ消去します">履歴クリア</button>
+            <button class="btn btn-success btn-sm" onclick="commitChanges()">✔ 守備読み上げ完了（オーダー確定）</button>
+          </div>
+        </div>
+        <p style="font-size:0.82rem; color:var(--text-muted); margin-top:0;">
+          ① <strong>攻撃中（代打・代走）</strong>：操作するたびに下の黒枠へ<strong>順番に追記</strong>されていきます。<br>
+          ② <strong>攻守交代時（守備変更）</strong>：代打・代走に出た選手の守備位置（または交代選手）やシート変更を左側で選んで<strong>「📢 変更アナウンスを自動生成」</strong>を押すと、このイニングの代打・代走・守備位置変更をすべて網羅した守備アナウンスが下に一括生成されます！
+        </p>
+        <div class="script-box">
+          <div class="script-tag" id="subPatternTag">待機中</div>
+          <div class="script-text" id="subScriptOutput">左側の「背番号クイック交代」または各選手の「交代/代打」ボタン、守備位置変更を操作してください。</div>
+          <div class="script-note" id="subScriptNote"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== TAB 3: BATTER & SHEET INTRO ==================== -->
+  <div id="tab-batter" class="tab-content">
+    <div class="card">
+      <div class="card-title">
+        <span>イニング・打者アナウンス</span>
+        <span id="currentBatterStatusBadge" style="font-size:0.82rem; background:#ebf5fb; color:#1b4f72; padding:3px 10px; border-radius:6px;">パークシティクーガーズ：次は1番打者から ／ 1巡目(2回読み)</span>
+      </div>
+      <div class="form-row">
+        <div class="form-group" style="max-width:100px;">
+          <label>イニング</label>
+          <select id="inningNum" onchange="onInningChange()">
+            <option value="1">1回</option><option value="2">2回</option><option value="3">3回</option>
+            <option value="4">4回</option><option value="5">5回</option><option value="6">6回</option>
+            <option value="7">7回</option><option value="8">8回</option><option value="9">延長</option>
+          </select>
+        </div>
+        <div class="form-group" style="max-width:125px;">
+          <label>表 / 裏</label>
+          <select id="inningHalf" onchange="onInningChange()">
+            <option value="top">オモテ（先攻）</option>
+            <option value="bot">ウラ（後攻）</option>
+          </select>
+        </div>
+        <div class="form-group" style="max-width:195px;">
+          <label>打順の巡目（2巡目で自動切替）</label>
+          <select id="battingLap" onchange="onManualLapChange()">
+            <option value="1">1巡目（2回読み）</option>
+            <option value="2">2巡目以降（1回読み・背番号なし）</option>
+          </select>
+        </div>
+        <div class="form-group" style="max-width:210px;">
+          <label>イニング先頭打者コール</label>
+          <select id="isLeadoffBatter">
+            <option value="yes">先頭打者（「〇回の表/裏〜」あり）</option>
+            <option value="no">2人目以降（打者のみコール）</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display:flex; flex-wrap:wrap; gap:8px; margin: 10px 0; align-items:center; background:#f2f4f4; padding:10px; border-radius:8px; border:1px solid #dce1e7;">
+        <button class="btn btn-outline btn-sm" onclick="stepInning(-1)" title="1つ前のイニング（表・裏）に戻します">⏪ 前の回</button>
+        <button class="btn btn-success btn-sm" style="padding:9px 14px; font-size:0.92rem;" onclick="stepInning(1)" id="nextInningBtn">🔄 次のイニングへ（1回ウラへ）</button>
+        <button class="btn btn-primary btn-sm" style="padding:9px 14px; font-size:0.92rem;" onclick="announceSheetIntro()">🛡 守備シート紹介（項番3・4）</button>
+        <div style="flex:1;"></div>
+        <button class="btn btn-outline btn-sm" onclick="stepBatter(-1)">⏮ 前の打者</button>
+        <button class="btn btn-accent" style="padding:9px 18px; font-size:0.98rem;" onclick="stepBatter(1)" id="nextBatterMainBtn">▶ 1番打者（たなか そういちろう）をコール</button>
+      </div>
+
+      <label>打者一覧（直接タップでも選択可能・現在打席の選手は青枠表示）：</label>
+      <div id="batterButtonsGrid" class="quick-grid" style="margin-top:6px;"><button class="quick-btn">
+      <div class="q-title">1番 ショート (#6) </div>
+      <div class="q-desc">たなか そういちろう </div>
+    </button><button class="quick-btn">
+      <div class="q-title">2番 セカンド (#8) </div>
+      <div class="q-desc">かいの はるた </div>
+    </button><button class="quick-btn">
+      <div class="q-title">3番 キャッチャー (#9) </div>
+      <div class="q-desc">たなか はるき </div>
+    </button><button class="quick-btn">
+      <div class="q-title">4番 ライト (#0) </div>
+      <div class="q-desc">なかにし りく </div>
+    </button><button class="quick-btn">
+      <div class="q-title">5番 ピッチャー (#3) </div>
+      <div class="q-desc">たなせ しゅん </div>
+    </button><button class="quick-btn">
+      <div class="q-title">6番 ファースト (#2) </div>
+      <div class="q-desc">はせがわ りんたろう </div>
+    </button><button class="quick-btn">
+      <div class="q-title">7番 サード (#5) </div>
+      <div class="q-desc">もちづき ゆうた </div>
+    </button><button class="quick-btn">
+      <div class="q-title">8番 レフト (#7) </div>
+      <div class="q-desc">おざき ゆうま </div>
+    </button><button class="quick-btn">
+      <div class="q-title">9番 センター (#4) </div>
+      <div class="q-desc">たにぐち けい </div>
+    </button></div>
+
+      <div class="script-box">
+        <div class="script-tag" id="batterTag">打者・シート紹介</div>
+        <div class="script-text" id="batterScriptOutput">上の「⏭ 次打者へ進む」または各打者ボタンをタップしてください。</div>
+        <div class="script-note" id="batterScriptNote"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== TAB 4: GAME FLOW & TEMPLATES ==================== -->
+  <div id="tab-flow" class="tab-content">
+    <div class="card">
+      <div class="card-title">試合前・進行・終了アナウンス（項番1〜4, 11〜15）</div>
+      <div class="quick-grid">
+        <button class="quick-btn" onclick="showFlowScript('pre30')">
+          <div class="q-title">1. 開始30分前</div>
+          <div class="q-desc">対戦カード・開始予定時刻</div>
+        </button>
+        <button class="quick-btn" onclick="showFlowScript('knockHome')">
+          <div class="q-title">2a. シートノック（後攻）</div>
+          <div class="q-desc">5分間・残り2分・終了</div>
+        </button>
+        <button class="quick-btn" onclick="showFlowScript('knockAway')">
+          <div class="q-title">2b. シートノック（先攻）</div>
+          <div class="q-desc">5分間アナウンス</div>
+        </button>
+        <button class="quick-btn" onclick="showFlowScript('lineup')">
+          <div class="q-title">2c. スタメン・審判発表</div>
+          <div class="q-desc">両チーム1〜9番＋審判(4氏/3氏)</div>
+        </button>
+        <button class="quick-btn" onclick="showFlowScript('gameStart')">
+          <div class="q-title">3. 試合開始挨拶後</div>
+          <div class="q-desc">まもなく試合開始</div>
+        </button>
+        <button class="quick-btn" onclick="showFlowScript('waterUmp')">
+          <div class="q-title">12. 審判員の給水</div>
+          <div class="q-desc">ベンチ集合案内</div>
+        </button>
+        <button class="quick-btn" onclick="showFlowScript('waterPlayer')">
+          <div class="q-title">13. 選手の給水</div>
+          <div class="q-desc">給水開始〜守備戻り</div>
+        </button>
+        <button class="quick-btn" onclick="showFlowScript('nextGame')">
+          <div class="q-title">14. 次の試合の連絡</div>
+          <div class="q-desc">監督・主将・捕手呼び出し</div>
+        </button>
+        <button class="quick-btn" onclick="showFlowScript('tiebreak')">
+          <div class="q-title">15. タイブレーク</div>
+          <div class="q-desc">同点タイブレーク・抽選案内</div>
+        </button>
+        <button class="quick-btn" onclick="showFlowScript('gameEnd')">
+          <div class="q-title">11. 試合終了（通常/コールド）</div>
+          <div class="q-desc">スコア・勝利チーム・整備</div>
+        </button>
+      </div>
+
+      <div id="flowExtraInputs" style="margin-top:12px; padding:10px; background:#f8f9fa; border-radius:8px; display:none;"></div>
+
+      <div class="script-box">
+        <div class="script-tag" id="flowTag">定型アナウンス</div>
+        <div class="script-text" id="flowScriptOutput">上のメニューから場面を選択してください。登録したチーム名・選手名・審判名が自動で差し込まれます。</div>
+        <div class="script-note" id="flowScriptNote"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal for Pinch Hitter / Pinch Runner / Player Sub -->
+<div class="modal-backdrop" id="subModal">
+  <div class="modal">
+    <h3 id="modalTitle">選手交代</h3>
+    <div id="modalBody"></div>
+    <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:14px;">
+      <button class="btn btn-outline btn-sm" onclick="closeModal()">キャンセル</button>
+      <button class="btn btn-primary btn-sm" id="modalConfirmBtn">決定</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal for Paste Import -->
+<div class="modal-backdrop" id="pasteModal">
+  <div class="modal">
+    <h3 id="pasteModalTitle">先攻チーム Excel貼り付け読込</h3>
+    <p style="font-size:0.82rem; color:var(--text-muted); margin-top:0;">
+      Excelの「CSV出力用データ」シートの表（または「メンバー表入力」シートの選手一覧）をコピーして、下の枠に貼り付けてください。
+    </p>
+    <textarea id="pasteArea" rows="8" style="width:100%; font-size:0.82rem;" placeholder="ここにExcelからコピーした内容を貼り付け..."></textarea>
+    <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:12px;">
+      <button class="btn btn-outline btn-sm" onclick="closePasteModal()">キャンセル</button>
+      <button class="btn btn-success btn-sm" id="pasteConfirmBtn">取り込む</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal for DH Release (指名打者解除) -->
+<div class="modal-backdrop" id="dhReleaseModal">
+  <div class="modal">
+    <h3>🔄 指名打者（DH）の解除</h3>
+    <p style="font-size:0.82rem; color:var(--text-muted); margin-top:0;">
+      指名打者を解除して10人出場から通常の9人出場へ移行します。どちらのパターンか選択してください。
+    </p>
+    <div id="dhReleaseBody"></div>
+    <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:14px;">
+      <button class="btn btn-outline btn-sm" onclick="closeDhReleaseModal()">キャンセル</button>
+      <button class="btn btn-primary btn-sm" onclick="applyDhRelease()">DH解除を反映して原稿生成</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal for Smartphone Share / Handover (QR, URL, Pre-filled HTML, Code) -->
+<div class="modal-backdrop open" id="shareModal">
+  <div class="modal" style="max-width:600px;">
+    <h3>📱 アナウンス担当のスマホ・タブレットへ引き継ぎ</h3>
+    <p style="font-size:0.82rem; color:var(--text-muted); margin-top:0;">
+      パソコンで入力したスタメン・控え・審判データを、アナウンス担当のお母様のスマホやタブレットへ引き継ぎます。
+    </p>
+
+    <!-- Method 1: URL & QR Code -->
+    <div style="background:#ebf5fb; border:1px solid #2e86c1; border-radius:8px; padding:12px; margin-bottom:12px;">
+      <div style="font-weight:700; color:#1b4f72; font-size:0.9rem; margin-bottom:6px;">
+        方法A：共有URL・QRコードで送る（データの入ったURLを発行）
+      </div>
+      <div style="font-size:0.78rem; color:#2c3e50; margin-bottom:8px;">
+        ※Web上（Google Apps Script / GitHub Pages等）に公開している場合、下のURLまたはQRコードを送るだけで、スマホで開いた瞬間に全データが反映されます。
+      </div>
+      <div id="localFileUrlBox" style="display: block; margin-bottom: 8px; background: rgb(255, 255, 255); padding: 8px; border-radius: 6px; border: 1px dashed rgb(46, 134, 193);">
+        <label style="color:#1b4f72;">公開先のベースURL（パソコンのローカルで開いている場合のみ入力・自動保存）</label>
+        <input type="text" id="customBaseUrl" style="width:100%; font-size:0.82rem; margin-top:3px;" placeholder="例: https://xxxx.github.io/announce.html" oninput="updateShareUrlAndQr()">
+      </div>
+      <div style="display:flex; gap:6px; margin-bottom:8px;">
+        <input type="text" id="shareUrlInput" readonly="" style="flex:1; font-size:0.8rem; background:#fff;" onclick="this.select()">
+        <button class="btn btn-primary btn-sm" onclick="copyShareUrl()">🔗 URLをコピー</button>
+      </div>
+      <div style="text-align:center; background:#fff; padding:10px; border-radius:8px; border:1px solid #dce1e7;">
+        <div style="font-size:0.76rem; color:#7f8c8d; margin-bottom:4px;">📷 スマホのカメラで読み取って開く（ネット接続時）</div>
+        <img id="shareQrImg" alt="QRコード" style="width:180px; height:180px; object-fit:contain; border:1px solid #eee; border-radius:4px;" src="https://quickchart.io/qr?size=220&amp;margin=2&amp;ecLevel=L&amp;text=WyLku6Tlkow45bm05bqm44CA5bm45Yy65bCR5bm06YeO55CD6YCj55uf56eL5a2j5aSn5LyaIiwi5rG65Yud5oimIiwiIiwi44OR44O844Kv44K344OG44Kj44Kv44O844Ks44O844K6IiwiMSIsIuWwj-WAieWwkeW5tOmHjueQg-mDqCIsIjMiLCIiLCIiLCIiLCIiLFsiNS42LuOBn-OBquOBiyDjgZ3jgYbjgYTjgaHjgo3jgYYufDMuOC7jgYvjgYTjga4g44Gv44KL44GfLnwxLjku44Gf44Gq44GLIOOBr-OCi-OBjS58OC4wLuOBquOBi-OBq-OBlyDjgorjgY8ufDAuMy7jgZ_jgarjgZsg44GX44KF44KTLnwyLjIu44Gv44Gb44GM44KPIOOCiuOCk-OBn-OCjeOBhi58NC41LuOCguOBoeOBpeOBjSDjgobjgYbjgZ8ufDYuNy7jgYrjgZbjgY0g44KG44GG44G-Lnw3LjQu44Gf44Gr44GQ44GhIOOBkeOBhC4iLCIxMC7jgb_jgZ7jgZDjgaEg44Gq44GqLnwxLuOCj-OBoCDjgZfjgoXjgYbjgagufDExLuOChOOBmeOBoCDjgZ_jgZHjgbLjgo0ufDEyLuOBk-OBv-OChOOBviDjgZfjgoXjgpPjgZnjgZEufDEzLuOBjeOBnyDjgobjgYbjgZfjgpMufDE0LuOBhOOCj-OBr-OCiSDjgZfjgoXjgYQufDE1LuOCj-OBoCDjgYvjgYTjgagufDE2LuOBn-OBi-OBr-OBlyDjgZHjgYTjgagufDE3LuOBleOBleOBjSDjgobjgYbjgaDjgYQufDE4LuOBi-OBhOOBriDjgbLjgarjgZ8ufDE5LuOBm-OBjeOBqSDjga_jgovjgagufDIwLuOBl-OCguOBvuOBiCDjgajjgYbjgb8ufDIxLuOBi-OCgeOBl-OBviDjgbLjgYvjgosufDIyLuOCguOCiuOBnyDjgYvjgYTjgagufDMyLuOBn-OBi-OBr-OBlyDjgYvjgpPjgaDjgYQuIl0sWyIwLi4ufDEuLi58Mi4uLnwzLi4ufDQuLi58NS4uLnw2Li4ufDcuLi58OC4uLiIsIiJdXQ">
+      </div>
+    </div>
+
+    <!-- Method 2: Pre-populated HTML download (Best for Google Drive / LINE file sharing) -->
+    <div style="background:#eafaf1; border:1px solid #27ae60; border-radius:8px; padding:12px; margin-bottom:12px;">
+      <div style="font-weight:700; color:#1e8449; font-size:0.9rem; margin-bottom:6px;">
+        方法B：Googleドライブ・LINE用「データ埋め込み済みファイル」を出力
+      </div>
+      <div style="font-size:0.78rem; color:#2c3e50; margin-bottom:8px;">
+        ⚠️ Googleドライブは仕様上、通常のURL共有だけだと中身がリセットされますが、下のボタンで<strong>「今のスタメンデータが最初から埋め込まれた専用HTMLファイル」</strong>を保存してGoogleドライブやLINEに置けば、お母様がスマホで開いた瞬間に全メンバーが入った状態で使えます！
+      </div>
+      <button class="btn btn-success btn-sm btn-block" onclick="exportPreloadedHtml()">📥 スタメン埋め込み済みHTMLファイルを保存</button>
+    </div>
+
+    <!-- Method 3: Text Code Copy & Paste (Works anywhere) -->
+    <div style="background:#fef9e7; border:1px solid #f39c12; border-radius:8px; padding:12px;">
+      <div style="font-weight:700; color:#b9770e; font-size:0.9rem; margin-bottom:6px;">
+        方法C：LINE・メールで「引き継ぎ呪文（文字コード）」を送る／読み込む
+      </div>
+      <div style="font-size:0.78rem; color:#2c3e50; margin-bottom:8px;">
+        すでにスマホ側にこのツールが入っている場合は、「引き継ぎコードをコピー」してLINEのトークで送り、スマホ側で下に貼り付けて「復元」を押すだけでも一瞬で同期できます。
+      </div>
+      <div style="display:flex; gap:6px; margin-bottom:8px;">
+        <button class="btn btn-accent btn-sm" style="flex:1;" onclick="copyTransferCode()">📋 引き継ぎコードをコピー（送る側）</button>
+      </div>
+      <div style="display:flex; gap:6px;">
+        <input type="text" id="importCodeInput" style="flex:1; font-size:0.8rem;" placeholder="受け取った引き継ぎコード（または共有URL）をここに貼り付け">
+        <button class="btn btn-primary btn-sm" onclick="importFromTransferCode()">📥 データを復元（受ける側）</button>
+      </div>
+    </div>
+
+    <div style="display:flex; justify-content:flex-end; margin-top:14px;">
+      <button class="btn btn-outline btn-sm" onclick="closeShareModal()">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Safe storage wrapper (prevents errors inside Google Apps Script iframe or private browsing)
+function safeGetStorage(key) {
+  try { return window.localStorage.getItem(key); } catch (e) { return null; }
+}
+function safeSetStorage(key, val) {
+  try { window.localStorage.setItem(key, val); } catch (e) {}
+}
+function safeRemoveStorage(key) {
+  try { window.localStorage.removeItem(key); } catch (e) {}
+}
+
+const POSITIONS = ["ピッチャー", "キャッチャー", "ファースト", "セカンド", "サード", "ショート", "レフト", "センター", "ライト", "指名打者"];
+const ORDER_READINGS = ["いちばん", "にばん", "さんばん", "よばん", "ごばん", "ろくばん", "ななばん", "はちばん", "きゅうばん", "ピッチャー（守備専任）"];
+
+// State
+let state = {
+  tournamentName: "",
+  gameNumber: "第1試合",
+  startTime: "9時00分",
+  awayTeamName: "",
+  awayBench: "3",
+  homeTeamName: "",
+  homeBench: "1",
+  umpPlate: "", ump1B: "", ump2B: "", ump3B: "",
+  away: { starters: [], bench: [], active: [], pending: [] },
+  home: { starters: [], bench: [], active: [], pending: [] }
+};
+
+let currentSubTeam = "away";
+let selectedBenchIdInModal = "";
+
+function createDefaultRoster() {
+  const starters = [];
+  for (let i = 0; i < 9; i++) {
+    starters.push({ order: i + 1, pos: POSITIONS[i], name: "", kana: "", num: "", status: "normal" });
+  }
+  // 10th slot (index 9): Dedicated pitcher slot when DH ("指名打者") is used in 1..9
+  starters.push({ order: "P", pos: "ピッチャー", name: "", kana: "", num: "", status: "normal" });
+
+  const bench = [];
+  for (let i = 0; i < 16; i++) {
+    bench.push({ id: "b" + i, name: "", kana: "", num: "", used: false });
+  }
+  return {
+    starters,
+    bench,
+    active: JSON.parse(JSON.stringify(starters)),
+    pending: JSON.parse(JSON.stringify(starters)),
+    committedActive: JSON.parse(JSON.stringify(starters)),
+    committedBench: JSON.parse(JSON.stringify(bench)),
+    offenseLogs: [],
+    historyStack: [],
+    currentBatterIdx: 0,
+    currentLap: "1",
+    hasStartedBatting: false
+  };
+}
+
+
+// ==================== SMARTPHONE SHARE / URL / QR / EMBEDDED HTML ====================
+const EmbeddedInitialState = {"tournamentName":"令和8年度　幸区少年野球連盟秋季大会","gameNumber":"決勝戦","startTime":"","awayTeamName":"パークシティクーガーズ","awayBench":"1","homeTeamName":"小倉少年野球部","homeBench":"3","umpPlate":"","ump1B":"","ump2B":"","ump3B":"","away":{"starters":[{"order":1,"pos":"ショート","name":"たなか そういちろう","kana":"","num":"6","status":"normal"},{"order":2,"pos":"セカンド","name":"かいの はるた","kana":"","num":"8","status":"normal"},{"order":3,"pos":"キャッチャー","name":"たなか はるき","kana":"","num":"9","status":"normal"},{"order":4,"pos":"ライト","name":"なかにし りく","kana":"","num":"0","status":"normal"},{"order":5,"pos":"ピッチャー","name":"たなせ しゅん","kana":"","num":"3","status":"normal"},{"order":6,"pos":"ファースト","name":"はせがわ りんたろう","kana":"","num":"2","status":"normal"},{"order":7,"pos":"サード","name":"もちづき ゆうた","kana":"","num":"5","status":"normal"},{"order":8,"pos":"レフト","name":"おざき ゆうま","kana":"","num":"7","status":"normal"},{"order":9,"pos":"センター","name":"たにぐち けい","kana":"","num":"4","status":"normal"},{"order":"P","pos":"ピッチャー","name":"","kana":"","num":"","status":"normal"}],"bench":[{"id":"away_b0","name":"みぞぐち なな","kana":"","num":"10","used":false},{"id":"away_b1","name":"わだ しゅうと","kana":"","num":"1","used":false},{"id":"away_b2","name":"やすだ たけひろ","kana":"","num":"11","used":false},{"id":"away_b3","name":"こみやま しゅんすけ","kana":"","num":"12","used":false},{"id":"away_b4","name":"きた ゆうしん","kana":"","num":"13","used":false},{"id":"away_b5","name":"いわはら しゅい","kana":"","num":"14","used":false},{"id":"away_b6","name":"わだ かいと","kana":"","num":"15","used":false},{"id":"away_b7","name":"たかはし けいと","kana":"","num":"16","used":false},{"id":"away_b8","name":"ささき ゆうだい","kana":"","num":"17","used":false},{"id":"away_b9","name":"かいの ひなた","kana":"","num":"18","used":false},{"id":"away_b10","name":"せきど はると","kana":"","num":"19","used":false},{"id":"away_b11","name":"しもまえ とうみ","kana":"","num":"20","used":false},{"id":"away_b12","name":"かめしま ひかる","kana":"","num":"21","used":false},{"id":"away_b13","name":"もりた かいと","kana":"","num":"22","used":false},{"id":"away_b14","name":"たかはし かんだい","kana":"","num":"32","used":false},{"id":"b15","name":"","kana":"","num":"","used":false}],"active":[{"order":1,"pos":"ショート","name":"たなか そういちろう","kana":"","num":"6","status":"normal"},{"order":2,"pos":"セカンド","name":"かいの はるた","kana":"","num":"8","status":"normal"},{"order":3,"pos":"キャッチャー","name":"たなか はるき","kana":"","num":"9","status":"normal"},{"order":4,"pos":"ライト","name":"なかにし りく","kana":"","num":"0","status":"normal"},{"order":5,"pos":"ピッチャー","name":"たなせ しゅん","kana":"","num":"3","status":"normal"},{"order":6,"pos":"ファースト","name":"はせがわ りんたろう","kana":"","num":"2","status":"normal"},{"order":7,"pos":"サード","name":"もちづき ゆうた","kana":"","num":"5","status":"normal"},{"order":8,"pos":"レフト","name":"おざき ゆうま","kana":"","num":"7","status":"normal"},{"order":9,"pos":"センター","name":"たにぐち けい","kana":"","num":"4","status":"normal"},{"order":"P","pos":"ピッチャー","name":"","kana":"","num":"","status":"normal"}],"pending":[{"order":1,"pos":"ショート","name":"たなか そういちろう","kana":"","num":"6","status":"normal"},{"order":2,"pos":"セカンド","name":"かいの はるた","kana":"","num":"8","status":"normal"},{"order":3,"pos":"キャッチャー","name":"たなか はるき","kana":"","num":"9","status":"normal"},{"order":4,"pos":"ライト","name":"なかにし りく","kana":"","num":"0","status":"normal"},{"order":5,"pos":"ピッチャー","name":"たなせ しゅん","kana":"","num":"3","status":"normal"},{"order":6,"pos":"ファースト","name":"はせがわ りんたろう","kana":"","num":"2","status":"normal"},{"order":7,"pos":"サード","name":"もちづき ゆうた","kana":"","num":"5","status":"normal"},{"order":8,"pos":"レフト","name":"おざき ゆうま","kana":"","num":"7","status":"normal"},{"order":9,"pos":"センター","name":"たにぐち けい","kana":"","num":"4","status":"normal"},{"order":"P","pos":"ピッチャー","name":"","kana":"","num":"","status":"normal"}],"committedActive":[{"order":1,"pos":"ショート","name":"たなか そういちろう","kana":"","num":"6","status":"normal"},{"order":2,"pos":"セカンド","name":"かいの はるた","kana":"","num":"8","status":"normal"},{"order":3,"pos":"キャッチャー","name":"たなか はるき","kana":"","num":"9","status":"normal"},{"order":4,"pos":"ライト","name":"なかにし りく","kana":"","num":"0","status":"normal"},{"order":5,"pos":"ピッチャー","name":"たなせ しゅん","kana":"","num":"3","status":"normal"},{"order":6,"pos":"ファースト","name":"はせがわ りんたろう","kana":"","num":"2","status":"normal"},{"order":7,"pos":"サード","name":"もちづき ゆうた","kana":"","num":"5","status":"normal"},{"order":8,"pos":"レフト","name":"おざき ゆうま","kana":"","num":"7","status":"normal"},{"order":9,"pos":"センター","name":"たにぐち けい","kana":"","num":"4","status":"normal"},{"order":"P","pos":"ピッチャー","name":"","kana":"","num":"","status":"normal"}],"committedBench":[{"id":"away_b0","name":"みぞぐち なな","kana":"","num":"10","used":false},{"id":"away_b1","name":"わだ しゅうと","kana":"","num":"1","used":false},{"id":"away_b2","name":"やすだ たけひろ","kana":"","num":"11","used":false},{"id":"away_b3","name":"こみやま しゅんすけ","kana":"","num":"12","used":false},{"id":"away_b4","name":"きた ゆうしん","kana":"","num":"13","used":false},{"id":"away_b5","name":"いわはら しゅい","kana":"","num":"14","used":false},{"id":"away_b6","name":"わだ かいと","kana":"","num":"15","used":false},{"id":"away_b7","name":"たかはし けいと","kana":"","num":"16","used":false},{"id":"away_b8","name":"ささき ゆうだい","kana":"","num":"17","used":false},{"id":"away_b9","name":"かいの ひなた","kana":"","num":"18","used":false},{"id":"away_b10","name":"せきど はると","kana":"","num":"19","used":false},{"id":"away_b11","name":"しもまえ とうみ","kana":"","num":"20","used":false},{"id":"away_b12","name":"かめしま ひかる","kana":"","num":"21","used":false},{"id":"away_b13","name":"もりた かいと","kana":"","num":"22","used":false},{"id":"away_b14","name":"たかはし かんだい","kana":"","num":"32","used":false},{"id":"b15","name":"","kana":"","num":"","used":false}],"offenseLogs":[],"historyStack":[],"currentBatterIdx":0,"currentLap":"1","hasStartedBatting":false},"home":{"starters":[{"order":1,"pos":"ピッチャー","name":"","kana":"","num":"","status":"normal"},{"order":2,"pos":"キャッチャー","name":"","kana":"","num":"","status":"normal"},{"order":3,"pos":"ファースト","name":"","kana":"","num":"","status":"normal"},{"order":4,"pos":"セカンド","name":"","kana":"","num":"","status":"normal"},{"order":5,"pos":"サード","name":"","kana":"","num":"","status":"normal"},{"order":6,"pos":"ショート","name":"","kana":"","num":"","status":"normal"},{"order":7,"pos":"レフト","name":"","kana":"","num":"","status":"normal"},{"order":8,"pos":"センター","name":"","kana":"","num":"","status":"normal"},{"order":9,"pos":"ライト","name":"","kana":"","num":"","status":"normal"},{"order":"P","pos":"ピッチャー","name":"","kana":"","num":"","status":"normal"}],"bench":[{"id":"b0","name":"","kana":"","num":"","used":false},{"id":"b1","name":"","kana":"","num":"","used":false},{"id":"b2","name":"","kana":"","num":"","used":false},{"id":"b3","name":"","kana":"","num":"","used":false},{"id":"b4","name":"","kana":"","num":"","used":false},{"id":"b5","name":"","kana":"","num":"","used":false},{"id":"b6","name":"","kana":"","num":"","used":false},{"id":"b7","name":"","kana":"","num":"","used":false},{"id":"b8","name":"","kana":"","num":"","used":false},{"id":"b9","name":"","kana":"","num":"","used":false},{"id":"b10","name":"","kana":"","num":"","used":false},{"id":"b11","name":"","kana":"","num":"","used":false},{"id":"b12","name":"","kana":"","num":"","used":false},{"id":"b13","name":"","kana":"","num":"","used":false},{"id":"b14","name":"","kana":"","num":"","used":false},{"id":"b15","name":"","kana":"","num":"","used":false}],"active":[{"order":1,"pos":"ピッチャー","name":"","kana":"","num":"","status":"normal"},{"order":2,"pos":"キャッチャー","name":"","kana":"","num":"","status":"normal"},{"order":3,"pos":"ファースト","name":"","kana":"","num":"","status":"normal"},{"order":4,"pos":"セカンド","name":"","kana":"","num":"","status":"normal"},{"order":5,"pos":"サード","name":"","kana":"","num":"","status":"normal"},{"order":6,"pos":"ショート","name":"","kana":"","num":"","status":"normal"},{"order":7,"pos":"レフト","name":"","kana":"","num":"","status":"normal"},{"order":8,"pos":"センター","name":"","kana":"","num":"","status":"normal"},{"order":9,"pos":"ライト","name":"","kana":"","num":"","status":"normal"},{"order":"P","pos":"ピッチャー","name":"","kana":"","num":"","status":"normal"}],"pending":[{"order":1,"pos":"ピッチャー","name":"","kana":"","num":"","status":"normal"},{"order":2,"pos":"キャッチャー","name":"","kana":"","num":"","status":"normal"},{"order":3,"pos":"ファースト","name":"","kana":"","num":"","status":"normal"},{"order":4,"pos":"セカンド","name":"","kana":"","num":"","status":"normal"},{"order":5,"pos":"サード","name":"","kana":"","num":"","status":"normal"},{"order":6,"pos":"ショート","name":"","kana":"","num":"","status":"normal"},{"order":7,"pos":"レフト","name":"","kana":"","num":"","status":"normal"},{"order":8,"pos":"センター","name":"","kana":"","num":"","status":"normal"},{"order":9,"pos":"ライト","name":"","kana":"","num":"","status":"normal"},{"order":"P","pos":"ピッチャー","name":"","kana":"","num":"","status":"normal"}],"committedActive":[{"order":1,"pos":"ピッチャー","name":"","kana":"","num":"","status":"normal"},{"order":2,"pos":"キャッチャー","name":"","kana":"","num":"","status":"normal"},{"order":3,"pos":"ファースト","name":"","kana":"","num":"","status":"normal"},{"order":4,"pos":"セカンド","name":"","kana":"","num":"","status":"normal"},{"order":5,"pos":"サード","name":"","kana":"","num":"","status":"normal"},{"order":6,"pos":"ショート","name":"","kana":"","num":"","status":"normal"},{"order":7,"pos":"レフト","name":"","kana":"","num":"","status":"normal"},{"order":8,"pos":"センター","name":"","kana":"","num":"","status":"normal"},{"order":9,"pos":"ライト","name":"","kana":"","num":"","status":"normal"},{"order":"P","pos":"ピッチャー","name":"","kana":"","num":"","status":"normal"}],"committedBench":[{"id":"b0","name":"","kana":"","num":"","used":false},{"id":"b1","name":"","kana":"","num":"","used":false},{"id":"b2","name":"","kana":"","num":"","used":false},{"id":"b3","name":"","kana":"","num":"","used":false},{"id":"b4","name":"","kana":"","num":"","used":false},{"id":"b5","name":"","kana":"","num":"","used":false},{"id":"b6","name":"","kana":"","num":"","used":false},{"id":"b7","name":"","kana":"","num":"","used":false},{"id":"b8","name":"","kana":"","num":"","used":false},{"id":"b9","name":"","kana":"","num":"","used":false},{"id":"b10","name":"","kana":"","num":"","used":false},{"id":"b11","name":"","kana":"","num":"","used":false},{"id":"b12","name":"","kana":"","num":"","used":false},{"id":"b13","name":"","kana":"","num":"","used":false},{"id":"b14","name":"","kana":"","num":"","used":false},{"id":"b15","name":"","kana":"","num":"","used":false}],"offenseLogs":[],"historyStack":[],"currentBatterIdx":0,"currentLap":"1","hasStartedBatting":false}}; // Replaced dynamically when exporting Preloaded HTML
+
+function packRosterCompact(r) {
+  // Pack starters (omit 10th slot if empty): "posIdx.num.name.kana" joined by "|"
+  const stSlots = (r.starters[9] && (r.starters[9].name || r.starters[9].num)) ? r.starters : r.starters.slice(0, 9);
+  const st = stSlots.map(p => `${POSITIONS.indexOf(p.pos)}.${p.num || ""}.${p.name || ""}.${p.kana || ""}`).join("|");
+  // Pack non-empty bench players: "num.name.kana.used" joined by "|"
+  const bn = r.bench.filter(b => b.name || b.num).map(b => `${b.num || ""}.${b.name || ""}.${b.kana || ""}${b.used ? ".1" : ""}`).join("|");
+  // Only pack active lineup if it differs from starters
+  const isDiff = r.active.some((p, i) => {
+    const s = r.starters[i] || {};
+    return p.name !== s.name || p.pos !== s.pos || p.num !== s.num || (p.status && p.status !== "normal");
+  });
+  if (!isDiff) return [st, bn];
+  const acSlots = (r.active[9] && (r.active[9].name || r.active[9].num)) ? r.active : r.active.slice(0, 9);
+  const ac = acSlots.map(p => `${POSITIONS.indexOf(p.pos)}.${p.num || ""}.${p.name || ""}.${p.kana || ""}.${p.status || "normal"}`).join("|");
+  return [st, bn, ac];
+}
+
+function unpackRosterCompact(arr, side) {
+  const roster = createDefaultRoster();
+  if (!arr || !Array.isArray(arr)) return roster;
+  const [st, bn, ac] = arr;
+
+  if (typeof st === "string") {
+    st.split("|").forEach((s, i) => {
+      if (i < 10 && s) {
+        const parts = s.split(".");
+        const posIdx = parseInt(parts[0], 10);
+        roster.starters[i] = {
+          order: i === 9 ? "P" : i + 1,
+          pos: POSITIONS[posIdx] || (i === 9 ? "ピッチャー" : POSITIONS[i]),
+          num: parts[1] || "",
+          name: parts[2] || "",
+          kana: parts[3] || "",
+          status: "normal"
+        };
+      }
+    });
+  } else if (Array.isArray(st)) {
+    st.forEach((item, i) => {
+      if (i < 10 && Array.isArray(item)) {
+        roster.starters[i] = {
+          order: i === 9 ? "P" : i + 1,
+          pos: POSITIONS[item[0]] || (i === 9 ? "ピッチャー" : POSITIONS[i]),
+          num: item[1] || "",
+          name: item[2] || "",
+          kana: item[3] || "",
+          status: "normal"
+        };
+      }
+    });
+  }
+
+  if (typeof bn === "string") {
+    if (bn.trim() !== "") {
+      bn.split("|").forEach((s, i) => {
+        if (i < 16 && s) {
+          const parts = s.split(".");
+          roster.bench[i] = {
+            id: side + "_b" + i,
+            num: parts[0] || "",
+            name: parts[1] || "",
+            kana: parts[2] || "",
+            used: parts[3] === "1"
+          };
+        }
+      });
+    }
+  } else if (Array.isArray(bn)) {
+    bn.forEach((item, i) => {
+      if (i < 16 && Array.isArray(item)) {
+        roster.bench[i] = {
+          id: side + "_b" + i,
+          num: item[0] || "",
+          name: item[1] || "",
+          kana: item[2] || "",
+          used: Boolean(item[3])
+        };
+      }
+    });
+  }
+
+  if (typeof ac === "string" && ac.trim() !== "") {
+    ac.split("|").forEach((s, i) => {
+      if (i < 10 && s) {
+        const parts = s.split(".");
+        const posIdx = parseInt(parts[0], 10);
+        roster.active[i] = {
+          order: i === 9 ? "P" : i + 1,
+          pos: POSITIONS[posIdx] || roster.starters[i].pos,
+          num: parts[1] || "",
+          name: parts[2] || "",
+          kana: parts[3] || "",
+          status: parts[4] || "normal"
+        };
+      }
+    });
+  } else if (Array.isArray(ac)) {
+    ac.forEach((item, i) => {
+      if (i < 10 && Array.isArray(item)) {
+        roster.active[i] = {
+          order: i === 9 ? "P" : i + 1,
+          pos: POSITIONS[item[0]] || roster.starters[i].pos,
+          num: item[1] || "",
+          name: item[2] || "",
+          kana: item[3] || "",
+          status: item[4] || "normal"
+        };
+      }
+    });
+  } else {
+    roster.active = JSON.parse(JSON.stringify(roster.starters));
+  }
+
+  roster.pending = JSON.parse(JSON.stringify(roster.active));
+  roster.committedActive = JSON.parse(JSON.stringify(roster.active));
+  roster.committedBench = JSON.parse(JSON.stringify(roster.bench));
+  roster.historyStack = [];
+  return roster;
+}
+
+function encodeStateToToken() {
+  saveState();
+  const compact = [
+    state.tournamentName || "",
+    state.gameNumber || "第1試合",
+    state.startTime || "",
+    state.awayTeamName || "",
+    state.awayBench || "3",
+    state.homeTeamName || "",
+    state.homeBench || "1",
+    state.umpPlate || "",
+    state.ump1B || "",
+    state.ump2B || "",
+    state.ump3B || "",
+    packRosterCompact(state.away),
+    packRosterCompact(state.home)
+  ];
+  const jsonStr = JSON.stringify(compact);
+  const bytes = new TextEncoder().encode(jsonStr);
+  let bin = "";
+  bytes.forEach(b => { bin += String.fromCharCode(b); });
+  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+function decodeTokenToState(token) {
+  let clean = token.trim();
+  if (clean.includes("#data=")) {
+    clean = clean.split("#data=")[1].split("&")[0];
+  } else if (clean.includes("?data=")) {
+    clean = clean.split("?data=")[1].split("&")[0];
+  }
+  const b64 = clean.replace(/-/g, "+").replace(/_/g, "/");
+  const pad = b64.length % 4 === 0 ? "" : "=".repeat(4 - (b64.length % 4));
+  const bin = atob(b64 + pad);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  const jsonStr = new TextDecoder("utf-8").decode(bytes);
+  const c = JSON.parse(jsonStr);
+  if (!Array.isArray(c) || c.length < 13) throw new Error("Invalid format");
+
+  return {
+    tournamentName: c[0] || "",
+    gameNumber: c[1] || "第1試合",
+    startTime: c[2] || "",
+    awayTeamName: c[3] || "",
+    awayBench: c[4] || "3",
+    homeTeamName: c[5] || "",
+    homeBench: c[6] || "1",
+    umpPlate: c[7] || "",
+    ump1B: c[8] || "",
+    ump2B: c[9] || "",
+    ump3B: c[10] || "",
+    away: unpackRosterCompact(c[11], "away"),
+    home: unpackRosterCompact(c[12], "home")
+  };
+}
+
+function openShareModal() {
+  const isLocalFile = window.location.protocol === "file:";
+  document.getElementById("localFileUrlBox").style.display = isLocalFile ? "block" : "none";
+  const savedBase = safeGetStorage("kushoren_custom_base_url") || "";
+  if (isLocalFile && savedBase) {
+    document.getElementById("customBaseUrl").value = savedBase;
+  }
+  updateShareUrlAndQr();
+  document.getElementById("shareModal").classList.add("open");
+}
+
+function closeShareModal() {
+  document.getElementById("shareModal").classList.remove("open");
+}
+
+function updateShareUrlAndQr() {
+  const token = encodeStateToToken();
+  const isLocalFile = window.location.protocol === "file:";
+  let baseUrl = window.location.href.split("#")[0].split("?")[0];
+  let qrTargetText = "";
+
+  if (isLocalFile) {
+    const custom = document.getElementById("customBaseUrl").value.trim();
+    if (custom) {
+      safeSetStorage("kushoren_custom_base_url", custom);
+      baseUrl = custom.split("#")[0].split("?")[0];
+      qrTargetText = `${baseUrl}#data=${token}`;
+      document.getElementById("shareUrlInput").value = qrTargetText;
+    } else {
+      // ローカルファイルで開いていて公開URLが未入力の場合は、file:///C:/... を省いてデータコードのみをセット
+      qrTargetText = token;
+      document.getElementById("shareUrlInput").value = `（上の欄にWeb公開URLを入れると完全なURLになります）#data=${token}`;
+    }
+  } else {
+    qrTargetText = `${baseUrl}#data=${token}`;
+    document.getElementById("shareUrlInput").value = qrTargetText;
+  }
+
+  // 大容量データ（最大2953バイト）までエラーにならず表示できる QuickChart QR API (ecLevel=L) を使用
+  const qrImg = document.getElementById("shareQrImg");
+  qrImg.src = `https://quickchart.io/qr?size=220&margin=2&ecLevel=L&text=${encodeURIComponent(qrTargetText)}`;
+}
+
+function copyShareUrl() {
+  const input = document.getElementById("shareUrlInput");
+  input.select();
+  navigator.clipboard.writeText(input.value).then(() => {
+    alert("共有用URLをコピーしました！LINEやメールでそのまま送信できます。");
+  }).catch(() => {
+    document.execCommand("copy");
+    alert("共有用URLをコピーしました！");
+  });
+}
+
+function copyTransferCode() {
+  const token = encodeStateToToken();
+  navigator.clipboard.writeText(token).then(() => {
+    alert("引き継ぎコードをコピーしました！LINE等で送って、スマホ側の「データを復元」欄に貼り付けてください。");
+  }).catch(() => {
+    prompt("以下の引き継ぎコードをコピーしてください：", token);
+  });
+}
+
+function importFromTransferCode() {
+  const raw = document.getElementById("importCodeInput").value.trim();
+  if (!raw) {
+    alert("引き継ぎコードまたは共有URLを貼り付けてください。");
+    return;
+  }
+  try {
+    const newState = decodeTokenToState(raw);
+    state = newState;
+    safeSetStorage("kushoren_announce_v2", JSON.stringify(state));
+    restoreHeaderInputs();
+    renderSetupTables();
+    renderLiveOrder();
+    renderBatterButtons();
+    document.getElementById("importCodeInput").value = "";
+    closeShareModal();
+    alert(`試合データ（${state.awayTeamName || "先攻"} 対 ${state.homeTeamName || "後攻"}）を復元しました！`);
+  } catch (e) {
+    alert("データの復元に失敗しました。コードやURLが途中で切れていないか確認してください。");
+  }
+}
+
+function exportPreloadedHtml() {
+  saveState();
+  const currentHtml = document.documentElement.outerHTML;
+  const serialized = JSON.stringify(state);
+  const replaced = currentHtml.replace(
+    "const EmbeddedInitialState = null;",
+    `const EmbeddedInitialState = ${serialized};`
+  );
+  const blob = new Blob(["<!DOCTYPE html>\n" + replaced], { type: "text/html;charset=utf-8" });
+  const a = document.createElement("a");
+  const away = state.awayTeamName || "先攻";
+  const home = state.homeTeamName || "後攻";
+  const gNum = state.gameNumber || "試合";
+  a.href = URL.createObjectURL(blob);
+  a.download = `${gNum}_${away}vs${home}_アナウンス支援.html`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+function init() {
+  // 1. URLに #data=... がついている場合（共有URL・QRコードから開いた場合）は最優先で自動反映！
+  if (window.location.hash && window.location.hash.includes("data=")) {
+    try {
+      const fromUrl = decodeTokenToState(window.location.hash);
+      state = fromUrl;
+      safeSetStorage("kushoren_announce_v2", JSON.stringify(state));
+      // Clean hash so reloads use localStorage naturally
+      try { history.replaceState(null, "", window.location.pathname + window.location.search); } catch (e) {}
+      renderSetupTables();
+      restoreHeaderInputs();
+      renderLiveOrder();
+      renderBatterButtons();
+      setTimeout(() => {
+        alert(`共有URLから試合データ（${state.awayTeamName || "先攻"} 対 ${state.homeTeamName || "後攻"}）を自動読み込みしました！`);
+      }, 200);
+      return;
+    } catch (e) {
+      console.error("Failed to load state from URL hash:", e);
+    }
+  }
+
+  // 2. 「スタメン埋め込み済みHTML」として出力されたファイルを開いた場合はそのデータを初期反映！
+  if (typeof EmbeddedInitialState !== "undefined" && EmbeddedInitialState !== null) {
+    state = JSON.parse(JSON.stringify(EmbeddedInitialState));
+    safeSetStorage("kushoren_announce_v2", JSON.stringify(state));
+    renderSetupTables();
+    restoreHeaderInputs();
+    renderLiveOrder();
+    renderBatterButtons();
+    return;
+  }
+
+  const saved = safeGetStorage("kushoren_announce_v2");
+  if (saved) {
+    try {
+      state = JSON.parse(saved);
+      ["away", "home"].forEach(s => {
+        if (state[s] && state[s].starters && state[s].starters.length === 9) {
+          state[s].starters.push({ order: "P", pos: "ピッチャー", name: "", kana: "", num: "", status: "normal" });
+          state[s].active.push({ order: "P", pos: "ピッチャー", name: "", kana: "", num: "", status: "normal" });
+          state[s].pending.push({ order: "P", pos: "ピッチャー", name: "", kana: "", num: "", status: "normal" });
+        }
+        if (state[s]) {
+          if (!state[s].committedActive) state[s].committedActive = JSON.parse(JSON.stringify(state[s].active));
+          if (!state[s].committedBench) state[s].committedBench = JSON.parse(JSON.stringify(state[s].bench));
+          if (!state[s].historyStack) state[s].historyStack = [];
+          if (typeof state[s].currentBatterIdx !== "number") state[s].currentBatterIdx = 0;
+          if (!state[s].currentLap) state[s].currentLap = "1";
+          if (typeof state[s].hasStartedBatting !== "boolean") state[s].hasStartedBatting = false;
+        }
+      });
+    } catch (e) {
+      state.away = createDefaultRoster();
+      state.home = createDefaultRoster();
+    }
+  } else {
+    state.away = createDefaultRoster();
+    state.home = createDefaultRoster();
+  }
+  renderSetupTables();
+  restoreHeaderInputs();
+  renderLiveOrder();
+  renderBatterButtons();
+}
+
+function saveState() {
+  state.tournamentName = document.getElementById("tournamentName").value;
+  state.gameNumber = document.getElementById("gameNumber").value;
+  state.startTime = document.getElementById("startTime").value;
+  state.awayTeamName = document.getElementById("awayTeamName").value;
+  state.awayBench = document.getElementById("awayBench").value;
+  state.homeTeamName = document.getElementById("homeTeamName").value;
+  state.homeBench = document.getElementById("homeBench").value;
+  state.umpPlate = document.getElementById("umpPlate").value;
+  state.ump1B = document.getElementById("ump1B").value;
+  state.ump2B = document.getElementById("ump2B").value;
+  state.ump3B = document.getElementById("ump3B").value;
+
+  document.getElementById("lblSubAway").textContent = state.awayTeamName || "先攻チーム";
+  document.getElementById("lblSubHome").textContent = state.homeTeamName || "後攻チーム";
+
+  safeSetStorage("kushoren_announce_v2", JSON.stringify(state));
+}
+
+function restoreHeaderInputs() {
+  document.getElementById("tournamentName").value = state.tournamentName || "";
+  document.getElementById("gameNumber").value = state.gameNumber || "第1試合";
+  document.getElementById("startTime").value = state.startTime || "";
+  document.getElementById("awayTeamName").value = state.awayTeamName || "";
+  document.getElementById("awayBench").value = state.awayBench || "3";
+  document.getElementById("homeTeamName").value = state.homeTeamName || "";
+  document.getElementById("homeBench").value = state.homeBench || "1";
+  document.getElementById("umpPlate").value = state.umpPlate || "";
+  document.getElementById("ump1B").value = state.ump1B || "";
+  document.getElementById("ump2B").value = state.ump2B || "";
+  document.getElementById("ump3B").value = state.ump3B || "";
+  document.getElementById("lblSubAway").textContent = state.awayTeamName || "先攻チーム";
+  document.getElementById("lblSubHome").textContent = state.homeTeamName || "後攻チーム";
+}
+
+function syncBench(side) {
+  if (side === "away") {
+    const val = document.getElementById("awayBench").value;
+    document.getElementById("homeBench").value = val === "1" ? "3" : "1";
+  } else {
+    const val = document.getElementById("homeBench").value;
+    document.getElementById("awayBench").value = val === "1" ? "3" : "1";
+  }
+  saveState();
+}
+
+// ==================== CSV / PASTE PARSER ====================
+function handleCsvUpload(event, side) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const buffer = e.target.result;
+    let text = "";
+    try {
+      const utf8Decoder = new TextDecoder("utf-8", { fatal: true });
+      text = utf8Decoder.decode(buffer);
+    } catch (err) {
+      const sjisDecoder = new TextDecoder("shift-jis");
+      text = sjisDecoder.decode(buffer);
+    }
+    parseMemberText(text, side, ",");
+    event.target.value = "";
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+let pasteTargetSide = "away";
+function openPasteModal(side) {
+  pasteTargetSide = side;
+  document.getElementById("pasteModalTitle").textContent = (side === "away" ? "先攻チーム" : "後攻チーム") + " Excel貼り付け読込";
+  document.getElementById("pasteArea").value = "";
+  document.getElementById("pasteConfirmBtn").onclick = () => {
+    const raw = document.getElementById("pasteArea").value;
+    if (!raw.trim()) { alert("データが貼り付けられていません"); return; }
+    const sep = raw.includes("\t") ? "\t" : ",";
+    parseMemberText(raw, pasteTargetSide, sep);
+    closePasteModal();
+  };
+  document.getElementById("pasteModal").classList.add("open");
+}
+
+function closePasteModal() {
+  document.getElementById("pasteModal").classList.remove("open");
+}
+
+function parseCsvLine(line, sep) {
+  if (sep === "\t") return line.split("\t").map(s => s.trim().replace(/^"|"$/g, ""));
+  const result = [];
+  let cur = "", inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      inQuotes = !inQuotes;
+    } else if (ch === "," && !inQuotes) {
+      result.push(cur.trim());
+      cur = "";
+    } else {
+      cur += ch;
+    }
+  }
+  result.push(cur.trim());
+  return result;
+}
+
+function parseMemberText(text, side, sep) {
+  const lines = text.split(/\r?\n/).filter(l => l.trim() !== "");
+  if (lines.length === 0) return;
+
+  const newRoster = createDefaultRoster();
+  let detectedTeamName = "";
+  let detectedBench = "";
+  let benchIdx = 0;
+  let importedCount = 0;
+  let formatMode = "auto"; // "hiragana_split", "kanji_split", "combined"
+
+  lines.forEach(line => {
+    const cols = parseCsvLine(line, sep);
+    if (cols.length < 4) return;
+
+    // Header detection
+    if (cols[0] === "チーム名" || cols[0] === "No.") {
+      if (cols.includes("姓") || cols.includes("姓（苗字）")) {
+        formatMode = "kanji_split";
+      } else if (cols.includes("せい") || cols.includes("せい（みょうじ）")) {
+        formatMode = "hiragana_split";
+      } else {
+        formatMode = "combined";
+      }
+      return;
+    }
+
+    // Format A: "CSV出力用データ" sheet
+    if (cols.length >= 7 && (cols[1].includes("攻") || cols[2].includes("塁") || (!isNaN(parseInt(cols[5], 10)) && isNaN(parseInt(cols[0], 10))))) {
+      const tName = cols[0];
+      const benchStr = cols[2];
+      const orderRaw = (cols[3] || "").trim();
+      const isDhPitcher = (orderRaw.toUpperCase().startsWith("P") || orderRaw.includes("守備") || orderRaw === "投手");
+      const orderNum = isDhPitcher ? 10 : parseInt(orderRaw, 10);
+      const pos = cols[4];
+      const num = cols[5];
+
+      let name = "", kana = "";
+      if (formatMode === "kanji_split" || cols.length >= 10) {
+        // 10-11 cols: cols[6]=姓, cols[7]=名, cols[8]=せい, cols[9]=めい
+        const seiK = (cols[8] || "").trim();
+        const meiK = (cols[9] || "").trim();
+        const sei = (cols[6] || "").trim();
+        const mei = (cols[7] || "").trim();
+        // Prefer hiragana if available, or store kanji in name and kana in kana
+        name = (seiK && meiK) ? `${seiK} ${meiK}` : ((sei && mei) ? `${sei} ${mei}` : (seiK || sei || meiK || mei));
+        kana = "";
+      } else if (formatMode === "hiragana_split" || cols.length === 9) {
+        // v4 Hiragana-only CSV (9 cols): cols[6]=せい, cols[7]=めい, cols[8]=学年
+        const seiK = (cols[6] || "").trim();
+        const meiK = (cols[7] || "").trim();
+        name = (seiK && meiK) ? `${seiK} ${meiK}` : (seiK || meiK);
+        kana = "";
+      } else {
+        // Legacy 8 cols: cols[6]=選手氏名, cols[7]=ふりがな
+        name = (cols[6] || "").trim();
+        kana = (cols[7] || "").trim();
+      }
+
+      if (!name && !num) return;
+      if (tName && !detectedTeamName) detectedTeamName = tName;
+      if (benchStr && !detectedBench) detectedBench = benchStr.includes("1") ? "1" : "3";
+
+      if (orderNum >= 1 && orderNum <= 10) {
+        newRoster.starters[orderNum - 1] = {
+          order: orderNum === 10 ? "P" : orderNum,
+          pos: orderNum === 10 ? "ピッチャー" : (POSITIONS.includes(pos) ? pos : POSITIONS[orderNum - 1]),
+          name: name,
+          kana: kana,
+          num: num,
+          status: "normal"
+        };
+        importedCount++;
+      } else if (benchIdx < 16) {
+        newRoster.bench[benchIdx] = { id: side + "_b" + benchIdx, name: name, kana: kana, num: num, used: false };
+        benchIdx++;
+        importedCount++;
+      }
+    }
+    // Format B: Direct paste from "メンバー表入力" sheet
+    else if (cols.length >= 3 && !isNaN(parseInt(cols[0], 10))) {
+      const num = cols[1];
+      let name = "", kana = "", orderNum = NaN, pos = "";
+      let orderRaw = "";
+      if (formatMode === "kanji_split" || cols.length >= 9) {
+        // 9 cols: No., 背番号, 姓, 名, せい, めい, 学年, スタメン打順, 守備位置
+        const seiK = (cols[4] || "").trim();
+        const meiK = (cols[5] || "").trim();
+        const sei = (cols[2] || "").trim();
+        const mei = (cols[3] || "").trim();
+        name = (seiK && meiK) ? `${seiK} ${meiK}` : ((sei && mei) ? `${sei} ${mei}` : (seiK || sei || meiK || mei));
+        kana = "";
+        orderRaw = (cols[7] || "").trim();
+        pos = cols[8] || "";
+      } else {
+        // v4 Hiragana-only 7 cols: No., 背番号, せい, めい, 学年, スタメン打順, 守備位置
+        const seiK = (cols[2] || "").trim();
+        const meiK = (cols[3] || "").trim();
+        name = (seiK && meiK) ? `${seiK} ${meiK}` : (seiK || meiK);
+        kana = "";
+        orderRaw = (cols[5] || "").trim();
+        pos = cols[6] || "";
+      }
+      const isDhP = (orderRaw.toUpperCase().startsWith("P") || orderRaw.includes("守備") || orderRaw === "投手");
+      orderNum = isDhP ? 10 : parseInt(orderRaw, 10);
+
+      if (!name && !num) return;
+      if (orderNum >= 1 && orderNum <= 10) {
+        newRoster.starters[orderNum - 1] = {
+          order: orderNum === 10 ? "P" : orderNum,
+          pos: orderNum === 10 ? "ピッチャー" : (POSITIONS.includes(pos) ? pos : POSITIONS[orderNum - 1]),
+          name: name,
+          kana: kana,
+          num: num,
+          status: "normal"
+        };
+        importedCount++;
+      } else if (benchIdx < 16) {
+        newRoster.bench[benchIdx] = { id: side + "_b" + benchIdx, name: name, kana: kana, num: num, used: false };
+        benchIdx++;
+        importedCount++;
+      }
+    }
+  });
+
+  if (importedCount === 0) {
+    alert("有効な選手データが見つかりませんでした。「CSV出力用データ」シートの内容か確認してください。");
+    return;
+  }
+
+  newRoster.active = JSON.parse(JSON.stringify(newRoster.starters));
+  newRoster.pending = JSON.parse(JSON.stringify(newRoster.starters));
+  newRoster.committedActive = JSON.parse(JSON.stringify(newRoster.starters));
+  newRoster.committedBench = JSON.parse(JSON.stringify(newRoster.bench));
+  newRoster.historyStack = [];
+  state[side] = newRoster;
+
+  if (detectedTeamName) {
+    if (side === "away") state.awayTeamName = detectedTeamName;
+    else state.homeTeamName = detectedTeamName;
+  }
+  if (detectedBench) {
+    if (side === "away") {
+      state.awayBench = detectedBench;
+      state.homeBench = detectedBench === "1" ? "3" : "1";
+    } else {
+      state.homeBench = detectedBench;
+      state.awayBench = detectedBench === "1" ? "3" : "1";
+    }
+  }
+
+  safeSetStorage("kushoren_announce_v2", JSON.stringify(state));
+  restoreHeaderInputs();
+  renderSetupTables();
+  renderLiveOrder();
+  renderBatterButtons();
+  alert(`${detectedTeamName || (side === "away" ? "先攻チーム" : "後攻チーム")} の選手データ（${importedCount}名）を読み込みました！`);
+}
+
+// ==================== NAME & KANA HELPERS ====================
+function getSurname(fullName) {
+  if (!fullName) return "";
+  const parts = fullName.trim().split(/[\s　]+/);
+  return parts[0] || "";
+}
+
+function getSameSurnames(side) {
+  const roster = state[side];
+  // Deduplicate players by full name + jersey number so starters and active aren't double-counted!
+  const uniquePlayers = new Map();
+  [...roster.starters, ...roster.active, ...roster.bench].forEach(p => {
+    const n = (p.name || "").trim();
+    if (!n) return;
+    const key = `${p.num || ""}_${n}`;
+    if (!uniquePlayers.has(key)) {
+      uniquePlayers.set(key, n);
+    }
+  });
+
+  const counts = {};
+  uniquePlayers.forEach(fullName => {
+    const s = getSurname(fullName);
+    if (s) counts[s] = (counts[s] || 0) + 1;
+  });
+  return new Set(Object.keys(counts).filter(s => counts[s] > 1));
+}
+
+function formatCallName(side, playerObj) {
+  const fullName = (playerObj.name || "").trim();
+  const fullKana = (playerObj.kana || "").trim();
+  if (!fullName) return "（未入力）";
+
+  const sameSet = getSameSurnames(side);
+  const surname = getSurname(fullName);
+  const surnameKana = getSurname(fullKana);
+
+  if (sameSet.has(surname)) {
+    return (fullKana && fullKana !== fullName) ? `${fullName}（${fullKana}）` : fullName;
+  }
+  return (surnameKana && surnameKana !== surname) ? `${surname}（${surnameKana}）` : surname;
+}
+
+function formatFullNameWithKana(playerObj) {
+  const fullName = (playerObj.name || "").trim() || "（未入力）";
+  const fullKana = (playerObj.kana || "").trim();
+  return (fullKana && fullKana !== fullName) ? `${fullName}（${fullKana}）` : fullName;
+}
+
+// ==================== RENDER SETUP TABLES ====================
+function renderSetupTables() {
+  ["away", "home"].forEach(side => {
+    const tbody = document.getElementById(side + "SetupBody");
+    tbody.innerHTML = "";
+    const sameSet = getSameSurnames(side);
+
+    state[side].starters.forEach((p, idx) => {
+      const tr = document.createElement("tr");
+      const posOpts = POSITIONS.map(pos => `<option value="${pos}" ${p.pos === pos ? "selected" : ""}>${pos}</option>`).join("");
+      const isDup = sameSet.has(getSurname(p.name)) && getSurname(p.name) !== "";
+      const isDhPitcherRow = (idx === 9);
+      if (isDhPitcherRow) {
+        tr.style.background = "#ebf5fb";
+      }
+      tr.innerHTML = `
+        <td><strong title="${isDhPitcherRow ? '指名打者(DH)使用時の守備専任ピッチャー枠' : ''}">${isDhPitcherRow ? 'P<br><span style="font-size:0.65rem;font-weight:normal;">(DH投手)</span>' : p.order}</strong></td>
+        <td><select onchange="updateStarter('${side}', ${idx}, 'pos', this.value)">${posOpts}</select></td>
+        <td><input type="text" value="${p.num}" placeholder="${isDhPitcherRow ? 'DH時' : '10'}" inputmode="numeric" onchange="updateStarter('${side}', ${idx}, 'num', this.value)"></td>
+        <td>
+          <input type="text" value="${p.name}" placeholder="${isDhPitcherRow ? 'DH使用時の投手名（ひらがな・通常は空欄）' : 'やまだ たろう'}" onchange="updateStarter('${side}', ${idx}, 'name', this.value)">
+          ${isDup ? '<span class="same-surname-badge">同姓フル</span>' : ''}
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    const bbody = document.getElementById(side + "BenchBody");
+    bbody.innerHTML = "";
+    state[side].bench.forEach((b, idx) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>控${idx + 1}</td>
+        <td><input type="text" value="${b.num}" placeholder="15" inputmode="numeric" onchange="updateBench('${side}', ${idx}, 'num', this.value)"></td>
+        <td><input type="text" value="${b.name}" placeholder="こばやし つばさ" onchange="updateBench('${side}', ${idx}, 'name', this.value)"></td>
+      `;
+      bbody.appendChild(tr);
+    });
+
+    const alertEl = document.getElementById(side + "SameAlert");
+    if (sameSet.size > 0) {
+      alertEl.textContent = `※同姓あり(${Array.from(sameSet).join("・")})→フルネーム自動適用`;
+    } else {
+      alertEl.textContent = "";
+    }
+  });
+}
+
+function updateStarter(side, idx, field, val) {
+  state[side].starters[idx][field] = val.trim();
+  state[side].active[idx][field] = val.trim();
+  state[side].pending[idx][field] = val.trim();
+  if (state[side].committedActive && state[side].committedActive[idx]) {
+    state[side].committedActive[idx][field] = val.trim();
+  }
+  saveState();
+  renderSetupTables();
+  renderLiveOrder();
+  renderBatterButtons();
+}
+
+function updateBench(side, idx, field, val) {
+  state[side].bench[idx][field] = val.trim();
+  if (state[side].committedBench && state[side].committedBench[idx]) {
+    state[side].committedBench[idx][field] = val.trim();
+  }
+  saveState();
+  renderSetupTables();
+}
+
+// Tabs
+function switchTab(tabId, btn) {
+  document.querySelectorAll(".tab-content").forEach(el => el.classList.remove("active"));
+  document.querySelectorAll(".tab-btn").forEach(el => el.classList.remove("active"));
+  document.getElementById(tabId).classList.add("active");
+  btn.classList.add("active");
+  if (tabId === "tab-sub") renderLiveOrder();
+  if (tabId === "tab-batter") renderBatterButtons();
+}
+
+// ==================== TAB 2: QUICK NUMBER SUB & LIVE ORDER ====================
+function selectSubTeam(side) {
+  currentSubTeam = side;
+  document.getElementById("btnSubAway").classList.toggle("active", side === "away");
+  document.getElementById("btnSubHome").classList.toggle("active", side === "home");
+  renderLiveOrder();
+  renderOffenseLogsAndDefScript(side, "", "", "");
+}
+
+function toggleQuickRunnerBase() {
+  const type = document.getElementById("quickSubType").value;
+  document.getElementById("quickRunnerBaseWrap").style.display = (type === "PR") ? "block" : "none";
+}
+
+function findPlayerByJerseyNumber(side, numStr) {
+  const target = numStr.trim();
+  if (!target) return null;
+
+  // Search in active/pending lineup first
+  const activeIdx = state[side].pending.findIndex(p => String(p.num).trim() === target);
+  if (activeIdx !== -1) {
+    return { location: "lineup", idx: activeIdx, player: state[side].pending[activeIdx] };
+  }
+  // Search in bench
+  const benchObj = state[side].bench.find(b => b.name && String(b.num).trim() === target);
+  if (benchObj) {
+    return { location: "bench", benchObj: benchObj };
+  }
+  return null;
+}
+
+function executeQuickNumberSub() {
+  const side = currentSubTeam;
+  const subType = document.getElementById("quickSubType").value;
+  const outNum = document.getElementById("quickOutNum").value.trim();
+  const inNum = document.getElementById("quickInNum").value.trim();
+
+  if (!outNum || !inNum) {
+    alert("「退く背番号」と「入る背番号」の両方を入力してください。");
+    return;
+  }
+
+  const outFound = findPlayerByJerseyNumber(side, outNum);
+  if (!outFound || outFound.location !== "lineup") {
+    alert(`現在の出場メンバーの中に背番号「${outNum}」が見つかりません。`);
+    return;
+  }
+
+  const inFound = findPlayerByJerseyNumber(side, inNum);
+  if (!inFound || inFound.location !== "bench") {
+    alert(`控え選手リストの中に背番号「${inNum}」が見つかりません。先に①タブで控え登録するか、各行の「交代/代打」から手入力してください。`);
+    return;
+  }
+
+  pushHistorySnapshot(side);
+  const idx = outFound.idx;
+  const bObj = inFound.benchObj;
+  bObj.used = true;
+
+  // Clear inputs
+  document.getElementById("quickOutNum").value = "";
+  document.getElementById("quickInNum").value = "";
+
+  performSubstitution(side, idx, subType, bObj.name, bObj.kana || "", bObj.num, document.getElementById("quickRunnerBase").value);
+}
+
+function renderOffenseLogsAndDefScript(side, defScript, defPatternLabel, defNote) {
+  if (!state[side].offenseLogs) state[side].offenseLogs = [];
+  const logs = state[side].offenseLogs;
+
+  // 生成時（defScriptがある時）は上書き表示にする
+  if (defScript) {
+    document.getElementById("subPatternTag").textContent = defPatternLabel || "守備変更アナウンス";
+    document.getElementById("subScriptOutput").textContent = defScript;
+    document.getElementById("subScriptNote").textContent = defNote || "";
+    return;
+  }
+
+  if (logs.length === 0) {
+    document.getElementById("subPatternTag").textContent = "待機中";
+    document.getElementById("subScriptOutput").textContent = "左側の「背番号クイック交代」または各選手の「交代/代打」ボタン、守備位置変更を操作してください。";
+    document.getElementById("subScriptNote").textContent = "";
+    return;
+  }
+
+  const logBlock = logs.map((entry, i) => `【攻撃中交代 ${i + 1}（${entry.type}）】\n${entry.text}`).join("\n\n");
+  document.getElementById("subPatternTag").textContent = `攻撃中（代打・代走 履歴 ${logs.length}件）`;
+  document.getElementById("subScriptOutput").textContent = logBlock;
+  document.getElementById("subScriptNote").textContent = "※同じイニング内でさらに代打・代走が出ると、この下にそのまま追記されていきます。チェンジ（攻守交代）時に守備位置を調整して「📢 変更アナウンスを自動生成」を押すと、守備変更アナウンスに上書きされます。";
+}
+
+function clearOffenseLogs() {
+  const side = currentSubTeam;
+  state[side].offenseLogs = [];
+  saveState();
+  renderOffenseLogsAndDefScript(side, "", "", "");
+}
+
+function performSubstitution(side, idx, subType, newName, newKana, newNum, runnerBase) {
+  if (!state[side].offenseLogs) state[side].offenseLogs = [];
+  // For PH/PR during an inning, compare against current pending/active player in that slot
+  const origPlayer = state[side].pending[idx];
+  const oldCall = formatCallName(side, origPlayer);
+  const newPlayerObj = { name: newName, kana: newKana, num: newNum };
+  const newCall = formatCallName(side, newPlayerObj);
+  const newFull = formatFullNameWithKana(newPlayerObj);
+
+  if (subType === "PH") {
+    const script = `${ORDER_READINGS[idx]}、${oldCall}に代わりまして、${newCall}。\nバッターは、${newFull}、背番号${newNum}。`;
+    // Keep origPos from before PH so we know if they stayed at the same position or moved
+    const prevPos = state[side].active[idx].pos;
+    state[side].active[idx] = { ...origPlayer, pos: prevPos, name: newName, kana: newKana, num: newNum, status: "PH" };
+    state[side].pending[idx] = { ...origPlayer, pos: prevPos, name: newName, kana: newKana, num: newNum, status: "PH" };
+    state[side].offenseLogs.push({ type: `${idx + 1}番 代打（項番5）`, text: script });
+    saveState();
+    renderLiveOrder();
+    renderBatterButtons();
+    renderOffenseLogsAndDefScript(side, "", "", "");
+  } else if (subType === "PR") {
+    const script = `${runnerBase}ランナー、${oldCall}に代わりまして、${newCall}。\n${runnerBase}ランナーは、${newFull}、背番号${newNum}。`;
+    const prevPos = state[side].active[idx].pos;
+    state[side].active[idx] = { ...origPlayer, pos: prevPos, name: newName, kana: newKana, num: newNum, status: "PR" };
+    state[side].pending[idx] = { ...origPlayer, pos: prevPos, name: newName, kana: newKana, num: newNum, status: "PR" };
+    state[side].offenseLogs.push({ type: `${idx + 1}番 代走（項番6）`, text: script });
+    saveState();
+    renderLiveOrder();
+    renderBatterButtons();
+    renderOffenseLogsAndDefScript(side, "", "", "");
+  } else {
+    // DEF: stage into pending & auto-generate
+    state[side].pending[idx].name = newName;
+    state[side].pending[idx].kana = newKana;
+    state[side].pending[idx].num = newNum;
+    saveState();
+    renderLiveOrder();
+    generateChangeAnnouncement();
+  }
+}
+
+function pushHistorySnapshot(side) {
+  if (!state[side].historyStack) state[side].historyStack = [];
+  state[side].historyStack.push({
+    active: JSON.parse(JSON.stringify(state[side].active)),
+    pending: JSON.parse(JSON.stringify(state[side].pending)),
+    bench: JSON.parse(JSON.stringify(state[side].bench)),
+    offenseLogs: JSON.parse(JSON.stringify(state[side].offenseLogs || []))
+  });
+  if (state[side].historyStack.length > 20) {
+    state[side].historyStack.shift();
+  }
+}
+
+function undoLastChange() {
+  const side = currentSubTeam;
+  if (!state[side].historyStack || state[side].historyStack.length === 0) {
+    alert("これ以上戻せる操作履歴がありません。");
+    return;
+  }
+  const prev = state[side].historyStack.pop();
+  state[side].active = prev.active;
+  state[side].pending = prev.pending;
+  state[side].bench = prev.bench;
+  state[side].offenseLogs = prev.offenseLogs;
+  saveState();
+  renderSetupTables();
+  renderLiveOrder();
+  renderBatterButtons();
+  // まだ変更が残っていれば再生成、なければ待機画面または攻撃中ログを表示
+  const hasAnyDiff = state[side].pending.some((p, i) => {
+    const a = state[side].active[i];
+    return p.name !== a.name || p.pos !== a.pos || p.num !== a.num || a.status === "PH" || a.status === "PR";
+  });
+  if (hasAnyDiff && state[side].offenseLogs.length === 0) {
+    generateChangeAnnouncement();
+  } else {
+    renderOffenseLogsAndDefScript(side, "", "", "");
+  }
+}
+
+function revertSingleRow(idx) {
+  const side = currentSubTeam;
+  pushHistorySnapshot(side);
+  const baseList = state[side].committedActive || state[side].starters;
+  const orig = baseList[idx];
+  const currentPending = state[side].pending[idx];
+
+  // もし控え選手が入っていた場合は、その控え選手の「使用済み(used)」を解除して再び選べるように戻す
+  if (currentPending && currentPending.name !== orig.name) {
+    const bObj = state[side].bench.find(b => b.name === currentPending.name && String(b.num) === String(currentPending.num));
+    if (bObj) bObj.used = false;
+  }
+
+  state[side].active[idx] = JSON.parse(JSON.stringify(orig));
+  state[side].pending[idx] = JSON.parse(JSON.stringify(orig));
+  saveState();
+  renderSetupTables();
+  renderLiveOrder();
+  renderBatterButtons();
+  renderOffenseLogsAndDefScript(side, `（${idx === 9 ? "P枠" : (idx + 1) + "番"} を変更前の ${orig.pos} #${orig.num} ${orig.name} に戻しました）`, "個別リセット完了", "");
+}
+
+function renderLiveOrder() {
+  const container = document.getElementById("liveOrderList");
+  container.innerHTML = "";
+  const active = state[currentSubTeam].active;
+  const pending = state[currentSubTeam].pending;
+  const committed = state[currentSubTeam].committedActive || active;
+
+  const hasDhInLineup = pending.slice(0, 9).some(p => p.pos === "指名打者") || active.slice(0, 9).some(p => p.pos === "指名打者") || committed.slice(0, 9).some(p => p.pos === "指名打者");
+  pending.forEach((p, idx) => {
+    // Only show 10th slot (idx === 9) if DH is used or if a player is registered in slot 9
+    if (idx === 9 && !p.name && !(active[9] && active[9].name) && !(committed[9] && committed[9].name) && !hasDhInLineup) return;
+
+    const baseOrig = committed[idx] || active[idx];
+    const isChanged = (p.name !== baseOrig.name || p.pos !== baseOrig.pos || p.num !== baseOrig.num);
+    const isPhPr = (p.status === "PH" || p.status === "PR");
+
+    const row = document.createElement("div");
+    row.className = "player-row" + (isPhPr ? " ph-pr" : (isChanged ? " changed" : ""));
+    if (idx === 9) row.style.borderLeft = "4px solid #2e86c1";
+
+    const posOptions = POSITIONS.map(pos => `<option value="${pos}" ${p.pos === pos ? "selected" : ""}>${pos}</option>`).join("");
+    const statusBadge = p.status === "PH" ? `<span class="same-surname-badge" style="background:#d35400;">代打中</span>` :
+                        p.status === "PR" ? `<span class="same-surname-badge" style="background:#8e44ad;">代走中</span>` : "";
+
+    const revertBtnHtml = (isChanged || isPhPr)
+      ? `<button class="btn btn-outline btn-sm" style="color:#c0392b; border-color:#e6b0aa; padding:6px 8px;" onclick="revertSingleRow(${idx})" title="この打順だけ変更前の選手・守備位置に戻します">戻す</button>`
+      : "";
+
+    row.innerHTML = `
+      <div class="p-order" style="${idx === 9 ? 'background:#2e86c1;' : ''}" title="${idx === 9 ? '守備専任ピッチャー（DH制）' : ''}">${idx === 9 ? 'P' : p.order}</div>
+      <div class="p-info">
+        <div class="p-name">
+          <span class="p-num-badge">#${p.num || "-"}</span>${p.name || (idx === 9 ? "（DH守備専任投手・未登録）" : "（未登録）")}
+          ${p.kana ? `<span class="p-kana">(${p.kana})</span>` : ""}
+          ${statusBadge}
+        </div>
+        <div class="p-sub">${(isChanged || isPhPr) ? `変更前: ${baseOrig.pos} #${baseOrig.num} ${baseOrig.name}` : `現在: ${idx === 9 ? '守備専任 ' + p.pos : p.pos}`}</div>
+      </div>
+      <select class="p-pos-select" onchange="changePendingPos(${idx}, this.value)">
+        ${posOptions}
+      </select>
+      <button class="btn btn-outline btn-sm" onclick="openSubModal(${idx})">${idx === 9 ? '投手交代' : '交代/代打'}</button>
+      ${revertBtnHtml}
+    `;
+    container.appendChild(row);
+  });
+}
+
+function changePendingPos(idx, newPos) {
+  pushHistorySnapshot(currentSubTeam);
+  const prevPos = state[currentSubTeam].pending[idx].pos;
+  state[currentSubTeam].pending[idx].pos = newPos;
+  // もし1〜9番の「指名打者」を守備位置に変更して指名打者がいなくなった場合（手動でのDH解除）、10枠目(P枠)を自動で空にする
+  const stillHasDh = state[currentSubTeam].pending.slice(0, 9).some(p => p.pos === "指名打者");
+  if (prevPos === "指名打者" && !stillHasDh && state[currentSubTeam].pending[9]) {
+    state[currentSubTeam].pending[9] = { order: "P", pos: "ピッチャー", name: "", kana: "", num: "", status: "normal" };
+  }
+  saveState();
+  renderLiveOrder();
+}
+
+function discardPendingChanges() {
+  const side = currentSubTeam;
+  if (!state[side].committedActive) {
+    state[side].committedActive = JSON.parse(JSON.stringify(state[side].starters));
+  }
+  if (!state[side].committedBench) {
+    state[side].committedBench = JSON.parse(JSON.stringify(state[side].bench));
+  }
+  pushHistorySnapshot(side);
+  // 確定前の元の選手・守備位置・控え選手リスト（使用済みフラグ含む）に完全復元する
+  state[side].active = JSON.parse(JSON.stringify(state[side].committedActive));
+  state[side].pending = JSON.parse(JSON.stringify(state[side].committedActive));
+  state[side].bench = JSON.parse(JSON.stringify(state[side].committedBench));
+  state[side].offenseLogs = [];
+  saveState();
+  renderSetupTables();
+  renderLiveOrder();
+  renderBatterButtons();
+  renderOffenseLogsAndDefScript(side, "（間違えて変更した選手交代・代打・代走・守備位置をすべて元の状態に戻しました）", "変更前に戻しました", "");
+}
+
+function commitChanges() {
+  const side = currentSubTeam;
+  pushHistorySnapshot(side);
+  state[side].pending.forEach(p => { p.status = "normal"; });
+  state[side].active = JSON.parse(JSON.stringify(state[side].pending));
+  // 確定した時点の選手・守備位置・控え使用状態を新しい基準（committed）として保存
+  state[side].committedActive = JSON.parse(JSON.stringify(state[side].pending));
+  state[side].committedBench = JSON.parse(JSON.stringify(state[side].bench));
+  state[side].offenseLogs = [];
+  saveState();
+  renderLiveOrder();
+  renderBatterButtons();
+  document.getElementById("subPatternTag").textContent = "オーダー確定完了";
+  document.getElementById("subScriptOutput").textContent = "守備変更の読み上げが完了し、現在のオーダーとして確定しました。（もし間違えて確定してしまった場合は左上の「↩ 1つ戻す」で確定前に戻せます）";
+  document.getElementById("subScriptNote").textContent = "";
+  alert("現在のオーダーを確定しました！");
+}
+
+// Modal for Bench Chip Selection & Manual Sub
+function openSubModal(idx) {
+  const p = state[currentSubTeam].pending[idx];
+  const benchList = state[currentSubTeam].bench.filter(b => b.name && !b.used);
+  selectedBenchIdInModal = "";
+
+  let chipsHtml = "";
+  if (benchList.length > 0) {
+    chipsHtml = `<div class="bench-chip-grid">` + benchList.map(b => `
+      <button type="button" class="bench-chip" id="chip_${b.id}" onclick="selectBenchChip('${b.id}')">
+        <strong>#${b.num || "-"}</strong> ${b.name}<br>
+        <span style="font-size:0.72rem; color:#666;">${b.kana || ""}</span>
+      </button>
+    `).join("") + `</div>`;
+  } else {
+    chipsHtml = `<div style="font-size:0.82rem; color:#7f8c8d; padding:6px;">登録済みの控え選手がいません。下の欄から手入力してください。</div>`;
+  }
+
+  document.getElementById("modalTitle").textContent = `${p.order}番 #${p.num} ${p.name} の交代`;
+  document.getElementById("modalBody").innerHTML = `
+    <div class="form-group" style="margin-bottom:10px;">
+      <label>交代の種別</label>
+      <select id="modalSubType" onchange="toggleRunnerBase()">
+        <option value="DEF">守備からの選手交代（チェンジ時・投手交代など）</option>
+        <option value="PH">項番5：代打（攻撃中）</option>
+        <option value="PR">項番6：代走（攻撃中）</option>
+      </select>
+    </div>
+    <div class="form-group" id="runnerBaseGroup" style="display:none; margin-bottom:10px;">
+      <label>どの塁のランナーですか？</label>
+      <select id="modalRunnerBase">
+        <option value="ファースト">ファーストランナー</option>
+        <option value="セカンド">セカンドランナー</option>
+        <option value="サード">サードランナー</option>
+      </select>
+    </div>
+    <div class="form-group" style="margin-bottom:10px;">
+      <label>控え選手からタップして選択（背番号順）</label>
+      ${chipsHtml}
+    </div>
+    <div style="background:#f8f9fa; padding:8px; border-radius:6px; border:1px solid #e5e8e8;">
+      <label style="color:#1b4f72;">または直接入力（未登録の選手の場合）</label>
+      <div class="form-row" style="margin-bottom:0; margin-top:4px;">
+        <div class="form-group" style="max-width:85px;"><label>背番号</label><input type="text" id="manualNewNum" placeholder="18" inputmode="numeric"></div>
+        <div class="form-group"><label>選手名（ひらがな：せい めい）</label><input type="text" id="manualNewName" placeholder="さとう けんた"></div>
+        <input type="hidden" id="manualNewKana" value="">
+      </div>
+    </div>
+  `;
+
+  document.getElementById("modalConfirmBtn").onclick = () => applyModalSub(idx);
+  document.getElementById("subModal").classList.add("open");
+}
+
+function selectBenchChip(bId) {
+  selectedBenchIdInModal = bId;
+  document.querySelectorAll(".bench-chip").forEach(el => el.classList.remove("selected"));
+  const target = document.getElementById("chip_" + bId);
+  if (target) target.classList.add("selected");
+}
+
+function toggleRunnerBase() {
+  const type = document.getElementById("modalSubType").value;
+  document.getElementById("runnerBaseGroup").style.display = (type === "PR") ? "block" : "none";
+}
+
+function closeModal() {
+  document.getElementById("subModal").classList.remove("open");
+}
+
+function applyModalSub(idx) {
+  const subType = document.getElementById("modalSubType").value;
+  const manualName = document.getElementById("manualNewName").value.trim();
+  const manualNum = document.getElementById("manualNewNum").value.trim();
+  const manualKana = document.getElementById("manualNewKana").value.trim();
+
+  let newName = "", newNum = "", newKana = "";
+
+  pushHistorySnapshot(currentSubTeam);
+  if (manualName) {
+    newName = manualName;
+    newNum = manualNum;
+    newKana = manualKana;
+    state[currentSubTeam].bench.push({ id: "b" + Date.now(), name: newName, kana: newKana, num: newNum, used: true });
+  } else if (selectedBenchIdInModal) {
+    const bObj = state[currentSubTeam].bench.find(b => b.id === selectedBenchIdInModal);
+    newName = bObj.name;
+    newNum = bObj.num;
+    newKana = bObj.kana || "";
+    bObj.used = true;
+  } else {
+    alert("控え選手をタップして選ぶか、下の欄に選手名を入力してください。");
+    return;
+  }
+
+  closeModal();
+  const runnerBase = document.getElementById("modalRunnerBase") ? document.getElementById("modalRunnerBase").value : "ファースト";
+  performSubstitution(currentSubTeam, idx, subType, newName, newKana, newNum, runnerBase);
+}
+
+
+// ==================== DH RELEASE (指名打者解除) ====================
+function openDhReleaseModal() {
+  const side = currentSubTeam;
+  const pending = state[side].pending;
+  const dhIdx = pending.slice(0, 9).findIndex(p => p.pos === "指名打者");
+  const pSlot = pending[9];
+
+  if (dhIdx === -1 && (!pSlot || !pSlot.name)) {
+    alert("現在、このチームは指名打者（DH）を使用していません。");
+    return;
+  }
+
+  const dhPlayer = dhIdx !== -1 ? pending[dhIdx] : { order: "-", name: "（指名打者）", num: "" };
+  const pPlayer = (pSlot && pSlot.name) ? pSlot : { name: "（守備専任投手）", num: "" };
+
+  const defPosOpts = POSITIONS.filter(pos => pos !== "指名打者").map(pos => `<option value="${pos}">${pos}</option>`).join("");
+  const orderOpts = pending.slice(0, 9).map((p, i) => `<option value="${i}" ${i === dhIdx ? "selected" : ""}>${i + 1}番（現在：${p.pos} #${p.num} ${p.name}）</option>`).join("");
+
+  document.getElementById("dhReleaseBody").innerHTML = `
+    <div class="form-group" style="margin-bottom:10px;">
+      <label>DH解除のパターン</label>
+      <select id="dhReleasePattern" onchange="toggleDhReleaseFields()">
+        <option value="DH_TO_DEF">① 指名打者（${dhPlayer.order}番 ${dhPlayer.name}）が守備につく（投手 ${pPlayer.name} 等が退く）</option>
+        <option value="P_TO_ORDER">② 守備専任ピッチャー（${pPlayer.name}）が打順に入る（指名打者 ${dhPlayer.name} 等が退く）</option>
+      </select>
+    </div>
+
+    <div id="dhToDefBox" style="background:#f8f9fa; padding:10px; border-radius:8px; border:1px solid #dce1e7;">
+      <div class="form-group">
+        <label>${dhPlayer.order}番 ${dhPlayer.name}（現・指名打者）が就く守備位置</label>
+        <select id="dhNewDefPos">${defPosOpts}</select>
+      </div>
+      <div style="font-size:0.78rem; color:#555; margin-top:6px;">
+        ※ピッチャー以外の守備位置（例：ファースト）を選んだ場合、元ファーストの選手をピッチャー等へ移動させる操作も続けて画面上で行えます。
+      </div>
+    </div>
+
+    <div id="pToOrderBox" style="display:none; background:#f8f9fa; padding:10px; border-radius:8px; border:1px solid #dce1e7;">
+      <div class="form-group" style="margin-bottom:8px;">
+        <label>ピッチャー（#${pPlayer.num} ${pPlayer.name}）が入る打順（退く選手）</label>
+        <select id="pEnterOrderIdx">${orderOpts}</select>
+      </div>
+      <div class="form-group">
+        <label>ピッチャー（${pPlayer.name}）の守備位置（そのまま投げる場合はピッチャー）</label>
+        <select id="pNewDefPos">${defPosOpts}</select>
+      </div>
+    </div>
+  `;
+
+  document.getElementById("dhReleaseModal").classList.add("open");
+}
+
+function toggleDhReleaseFields() {
+  const pat = document.getElementById("dhReleasePattern").value;
+  document.getElementById("dhToDefBox").style.display = (pat === "DH_TO_DEF") ? "block" : "none";
+  document.getElementById("pToOrderBox").style.display = (pat === "P_TO_ORDER") ? "block" : "none";
+}
+
+function closeDhReleaseModal() {
+  document.getElementById("dhReleaseModal").classList.remove("open");
+}
+
+function applyDhRelease() {
+  const side = currentSubTeam;
+  pushHistorySnapshot(side);
+  const pending = state[side].pending;
+  const pat = document.getElementById("dhReleasePattern").value;
+  const dhIdx = pending.slice(0, 9).findIndex(p => p.pos === "指名打者");
+  const pSlot = pending[9];
+
+  if (pat === "DH_TO_DEF") {
+    const newPos = document.getElementById("dhNewDefPos").value;
+    if (dhIdx !== -1) {
+      pending[dhIdx].pos = newPos;
+    }
+    // Clear the 10th P slot
+    pending[9] = { order: "P", pos: "ピッチャー", name: "", kana: "", num: "", status: "normal" };
+  } else {
+    // P_TO_ORDER: dedicated pitcher enters batting order `targetIdx`
+    const targetIdx = parseInt(document.getElementById("pEnterOrderIdx").value, 10);
+    const pNewPos = document.getElementById("pNewDefPos").value;
+    if (pSlot && pSlot.name) {
+      pending[targetIdx] = {
+        order: targetIdx + 1,
+        pos: pNewPos,
+        name: pSlot.name,
+        kana: pSlot.kana || "",
+        num: pSlot.num || "",
+        status: "normal"
+      };
+    }
+    // If targetIdx was NOT the DH slot (e.g. Pitcher entered 7th batter's spot, so original DH at 5th batter must also leave or take a position), clear 10th P slot
+    pending[9] = { order: "P", pos: "ピッチャー", name: "", kana: "", num: "", status: "normal" };
+  }
+
+  saveState();
+  renderLiveOrder();
+  closeDhReleaseModal();
+  generateChangeAnnouncement();
+}
+
+// ==================== CORE AUTO-DETECTION ENGINE (Items 7a, 7b, 7c, 7d, 8, 9, 10) ====================
+function generateChangeAnnouncement() {
+  const side = currentSubTeam;
+  const teamName = side === "away" ? (state.awayTeamName || "先攻チーム") : (state.homeTeamName || "後攻チーム");
+  const active = state[side].active;
+  const pending = state[side].pending;
+
+  const changedSlots = [];
+  const subIns = [];
+  const phPrRemains = [];
+  const posMoves = [];
+
+  const hadDhBefore = active.slice(0, 9).some(p => p.pos === "指名打者") || Boolean(active[9] && active[9].name);
+  const hasDhNow = pending.slice(0, 9).some(p => p.pos === "指名打者") || Boolean(pending[9] && pending[9].name);
+  const isDhReleased = hadDhBefore && !hasDhNow;
+  const prevDedicatedPitcherName = (active[9] && active[9].name) ? active[9].name.trim() : "";
+
+  for (let i = 0; i < pending.length; i++) {
+    const a = active[i];
+    const p = pending[i];
+    // When DH is released, slot 9 (dedicated pitcher) disappears into 9-man lineup, so don't treat slot 9's disappearance as a 10th-slot sub
+    if (i === 9 && isDhReleased) continue;
+    if (i === 9 && !a.name && !p.name) continue;
+
+    const nameChanged = (a.name !== p.name);
+    const posChanged = (a.pos !== p.pos);
+    const wasPhPr = (a.status === "PH" || a.status === "PR");
+
+    if (nameChanged || posChanged || wasPhPr) {
+      changedSlots.push(i);
+    }
+
+    if (wasPhPr && !nameChanged) {
+      phPrRemains.push({ idx: i, oldPlayer: a, newPlayer: p, role: a.status === "PH" ? "代打" : "代走" });
+    } else if (nameChanged) {
+      const isPitcherEnteringOrder = isDhReleased && prevDedicatedPitcherName && (p.name.trim() === prevDedicatedPitcherName);
+      subIns.push({ idx: i, oldPlayer: a, newPlayer: p, wasPhPr: wasPhPr, isPitcherEnteringOrder: isPitcherEnteringOrder, role: a.status === "PH" ? "代打" : (a.status === "PR" ? "代走" : "") });
+    } else if (posChanged) {
+      posMoves.push({ idx: i, oldPos: a.pos, newPos: p.pos, player: p });
+    }
+  }
+
+  if (changedSlots.length === 0) {
+    renderOffenseLogsAndDefScript(side, "変更前のオーダーから選手や守備位置の変更がありません。", "変更なし", "");
+    return;
+  }
+
+  const visitedMoveIdx = new Set();
+  function buildChainFromPos(startPos) {
+    const lines = [];
+    let currPos = startPos;
+    while (true) {
+      const mover = posMoves.find(m => !visitedMoveIdx.has(m.idx) && m.oldPos === currPos);
+      if (!mover) break;
+      visitedMoveIdx.add(mover.idx);
+      const callName = formatCallName(side, mover.player);
+      lines.push(`${mover.oldPos}の${callName}が${mover.newPos}に入ります。`);
+      currPos = mover.newPos;
+    }
+    return lines;
+  }
+
+  function buildRemainingCycles() {
+    const lines = [];
+    while (true) {
+      // Prefer starting from a chain head (e.g., 指名打者 moving to a field position, or a position that no other unvisited mover is moving into)
+      const unvisited = posMoves.filter(m => !visitedMoveIdx.has(m.idx));
+      if (unvisited.length === 0) break;
+      const startMover = unvisited.find(m => m.oldPos === "指名打者") ||
+                         unvisited.find(m => !unvisited.some(other => other.newPos === m.oldPos)) ||
+                         unvisited[0];
+      const cycleLines = [];
+      let curr = startMover;
+      while (curr && !visitedMoveIdx.has(curr.idx)) {
+        visitedMoveIdx.add(curr.idx);
+        const callName = formatCallName(side, curr.player);
+        cycleLines.push(`${curr.oldPos}の${callName}が${curr.newPos}に入ります。`);
+        curr = posMoves.find(m => !visitedMoveIdx.has(m.idx) && m.oldPos === curr.newPos);
+      }
+      if (cycleLines.length > 0) {
+        lines.push(...cycleLines);
+      }
+    }
+    return lines;
+  }
+
+  let patternLabel = "";
+  let bodyLines = [];
+  let closingWord = "以上に代わります。";
+
+  const hasPhPrRemain = phPrRemains.length > 0;
+  const hasPhPrSubOut = subIns.some(s => s.wasPhPr);
+  const hasNormalSubIn = subIns.some(s => !s.wasPhPr);
+  const hasPosMove = posMoves.length > 0;
+  const hasPhPrAny = hasPhPrRemain || hasPhPrSubOut;
+
+  if (hasPhPrAny) {
+    // Handles 7a, 7b, 7c, 7d AND any multi-player combination in the same inning!
+    if (hasPhPrRemain && !hasPhPrSubOut && !hasPosMove && !hasNormalSubIn) {
+      patternLabel = "項番7a：代打・代走者がそのまま守備につく場合";
+      closingWord = phPrRemains.length > 1 ? "以上にかわります。" : "";
+    } else if (!hasPhPrRemain && hasPhPrSubOut && !hasPosMove && !hasNormalSubIn) {
+      patternLabel = "項番7b：代打・代走者に代わって別の選手が守備につく場合";
+      closingWord = subIns.length > 1 ? "以上に代わります。" : "";
+    } else if (hasPhPrRemain && !hasPhPrSubOut) {
+      patternLabel = "項番7c：代打・代走が守備につき＋シート異動あり";
+      closingWord = "以上にかわります。";
+    } else if (!hasPhPrRemain && hasPhPrSubOut) {
+      patternLabel = "項番7d：代打・代走に代わり別選手＋シート異動あり";
+      closingWord = "以上に代わります。";
+    } else {
+      patternLabel = "項番7複合：複数の代打・代走および守備・シート変更";
+      closingWord = "以上に代わります。";
+    }
+
+    bodyLines.push(`${teamName}、${isDhReleased ? "指名打者を解除し、" : ""}選手の交代をお知らせいたします。`);
+
+    // Process PH/PR actions in batting order (or slot order)
+    const phPrActions = [
+      ...phPrRemains.map(r => ({ type: "remain", idx: r.idx, item: r })),
+      ...subIns.filter(s => s.wasPhPr).map(s => ({ type: "sub", idx: s.idx, item: s }))
+    ].sort((a, b) => a.idx - b.idx);
+
+    phPrActions.forEach(act => {
+      if (act.type === "remain") {
+        const item = act.item;
+        const callName = formatCallName(side, item.newPlayer);
+        const chain = buildChainFromPos(item.newPlayer.pos);
+        if (chain.length > 0) {
+          bodyLines.push(`${item.role}の${callName}が、${item.newPlayer.pos}に入り、`);
+          bodyLines.push(...chain);
+        } else if (item.oldPlayer.pos === item.newPlayer.pos) {
+          bodyLines.push(`${item.role}の${callName}が、そのまま${item.newPlayer.pos}に入ります。`);
+        } else {
+          bodyLines.push(`${item.role}の${callName}が、${item.newPlayer.pos}に入ります。`);
+        }
+      } else {
+        const item = act.item;
+        const oldCall = formatCallName(side, item.oldPlayer);
+        const newCall = formatCallName(side, item.newPlayer);
+        const chain = buildChainFromPos(item.newPlayer.pos);
+        if (chain.length > 0) {
+          bodyLines.push(`${item.role}の${oldCall}に代わりまして、\n${ORDER_READINGS[item.idx]}に${newCall}が入り、${item.newPlayer.pos}に。`);
+          bodyLines.push(...chain);
+        } else {
+          bodyLines.push(`${item.role}の${oldCall}に代わりまして、\n${ORDER_READINGS[item.idx]}に${newCall}が、${item.newPlayer.pos}に入ります。`);
+        }
+      }
+    });
+
+    // Also process any normal defensive substitutions that happened at the same time
+    subIns.filter(s => !s.wasPhPr).forEach(item => {
+      const oldCall = formatCallName(side, item.oldPlayer);
+      const newCall = formatCallName(side, item.newPlayer);
+      const chain = buildChainFromPos(item.newPlayer.pos);
+      if (chain.length > 0) {
+        bodyLines.push(`${item.oldPlayer.pos}の${oldCall}に代わりまして、${newCall}が${item.newPlayer.pos}に入ります。`);
+        bodyLines.push(...chain);
+      } else if (item.oldPlayer.pos === item.newPlayer.pos) {
+        bodyLines.push(`${item.oldPlayer.pos}、${oldCall}に代わりまして、${newCall}が入ります。`);
+      } else {
+        bodyLines.push(`${item.oldPlayer.pos}の${oldCall}に代わりまして、${newCall}が${item.newPlayer.pos}に入ります。`);
+      }
+    });
+
+    bodyLines.push(...buildRemainingCycles());
+  } else if (hasNormalSubIn && !hasPosMove) {
+    patternLabel = isDhReleased ? "DH解除：指名打者の解除・選手交代" : "項番8：守備の交代（単独・複数）";
+    bodyLines.push(`${teamName}、${isDhReleased ? "指名打者を解除し、" : ""}選手の交代をお知らせいたします。`);
+    subIns.forEach(item => {
+      const oldCall = formatCallName(side, item.oldPlayer);
+      const newCall = formatCallName(side, item.newPlayer);
+      if (item.isPitcherEnteringOrder) {
+        if (item.newPlayer.pos === "ピッチャー") {
+          bodyLines.push(`${item.oldPlayer.pos}の${oldCall}に代わりまして、ピッチャーの${newCall}が、${ORDER_READINGS[item.idx]}に入ります。`);
+        } else {
+          bodyLines.push(`${item.oldPlayer.pos}の${oldCall}に代わりまして、ピッチャーの${newCall}が、${ORDER_READINGS[item.idx]}に入り、${item.newPlayer.pos}に入ります。`);
+        }
+      } else if (item.oldPlayer.pos === item.newPlayer.pos) {
+        bodyLines.push(`${item.oldPlayer.pos}、${oldCall}に代わりまして、${newCall}。`);
+      } else {
+        bodyLines.push(`${item.oldPlayer.pos}の${oldCall}に代わりまして、${newCall}が${item.newPlayer.pos}に入ります。`);
+      }
+    });
+    closingWord = "以上に代わります。";
+  } else if (!hasNormalSubIn && hasPosMove) {
+    patternLabel = isDhReleased ? "DH解除：指名打者が守備につきDH解除" : "項番9：シート（守備位置）の変更";
+    bodyLines.push(`${teamName}、${isDhReleased ? "指名打者を解除し、選手の交代並びに" : ""}シートの変更をお知らせいたします。`);
+    bodyLines.push(...buildRemainingCycles());
+    closingWord = "以上に代わります。";
+  } else {
+    patternLabel = isDhReleased ? "DH解除：指名打者解除とシート変更（複合型）" : "項番10：選手交代とシート変更（複合型）";
+    bodyLines.push(`${teamName}、${isDhReleased ? "指名打者を解除し、" : ""}選手の交代、並びにシートの変更をお知らせいたします。`);
+    subIns.forEach(item => {
+      const oldCall = formatCallName(side, item.oldPlayer);
+      const newCall = formatCallName(side, item.newPlayer);
+      const chain = buildChainFromPos(item.newPlayer.pos);
+      if (item.isPitcherEnteringOrder) {
+        if (item.newPlayer.pos === "ピッチャー") {
+          bodyLines.push(`${item.oldPlayer.pos}の${oldCall}に代わりまして、ピッチャーの${newCall}が、${ORDER_READINGS[item.idx]}に入ります。`);
+        } else {
+          bodyLines.push(`${item.oldPlayer.pos}の${oldCall}に代わりまして、ピッチャーの${newCall}が、${ORDER_READINGS[item.idx]}に入り、${item.newPlayer.pos}に入ります。`);
+        }
+        if (chain.length > 0) bodyLines.push(...chain);
+      } else if (item.oldPlayer.pos === item.newPlayer.pos && chain.length === 0) {
+        bodyLines.push(`${item.oldPlayer.pos}の${oldCall}に代わりまして、${newCall}。`);
+      } else if (chain.length > 0) {
+        bodyLines.push(`${item.oldPlayer.pos}の${oldCall}に代わりまして、${newCall}が${item.newPlayer.pos}に入ります。`);
+        bodyLines.push(...chain);
+      } else {
+        bodyLines.push(`${item.oldPlayer.pos}の${oldCall}に代わりまして、${newCall}が${item.newPlayer.pos}に入ります。`);
+      }
+    });
+    bodyLines.push(...buildRemainingCycles());
+    closingWord = "以上に代わります。";
+  }
+
+  // 複数行のつながりを自然にする自動整形：
+  // ・次の行が「〜に代わりまして」の選手交代なら、直前行の「に入ります。」を「に入り、」にする
+  // ・次の行がポジション移動なら、直前行の「に入ります。」を「に、」にする
+  // ・途中の「が入ります。」も後に続く行があれば「が入り、」にする
+  if (bodyLines.length > 2) {
+    for (let i = 1; i < bodyLines.length - 1; i++) {
+      const nextLine = bodyLines[i + 1] || "";
+      if (bodyLines[i].endsWith("に入ります。")) {
+        if (nextLine.includes("に代わりまして")) {
+          bodyLines[i] = bodyLines[i].replace(/に入ります。$/, "に入り、");
+        } else {
+          bodyLines[i] = bodyLines[i].replace(/に入ります。$/, "に、");
+        }
+      } else if (bodyLines[i].endsWith("が入ります。")) {
+        bodyLines[i] = bodyLines[i].replace(/が入ります。$/, "が入り、");
+      }
+    }
+  }
+
+  const orderSummaryLines = changedSlots.sort((a, b) => a - b).map(idx => {
+    const p = pending[idx];
+    const callName = formatCallName(side, p);
+    if (idx === 9) {
+      return `　${p.pos}、${callName}、背番号${p.num}`;
+    }
+    return `　${ORDER_READINGS[idx]}　${p.pos}、${callName}、背番号${p.num}`;
+  });
+
+  let finalScript = bodyLines.join("\n") + "\n\n" + orderSummaryLines.join("\n");
+  if (closingWord) {
+    finalScript += "\n" + closingWord;
+  }
+
+  renderOffenseLogsAndDefScript(
+    side,
+    finalScript,
+    patternLabel,
+    "※打順表に目を移し、変更になった打順を若い順（1番〜9番の順）に読み上げてください。読み終わったら右上の「✔ 守備読み上げ完了（オーダー確定）」を押すと確定し、履歴がクリアされます。"
+  );
+}
+
+// ==================== TAB 3: BATTER & SHEET INTRO ====================
+function getActiveOffenseSide() {
+  const half = document.getElementById("inningHalf").value;
+  return half === "top" ? "away" : "home";
+}
+
+function stepInning(delta) {
+  const innSel = document.getElementById("inningNum");
+  const halfSel = document.getElementById("inningHalf");
+  let inn = parseInt(innSel.value, 10) || 1;
+  let half = halfSel.value; // "top" or "bot"
+
+  if (delta > 0) {
+    if (half === "top") {
+      half = "bot";
+    } else {
+      half = "top";
+      if (inn < 9) inn += 1;
+    }
+  } else if (delta < 0) {
+    if (half === "bot") {
+      half = "top";
+    } else {
+      if (inn > 1) {
+        inn -= 1;
+        half = "bot";
+      }
+    }
+  }
+
+  innSel.value = String(inn);
+  halfSel.value = half;
+  onInningChange();
+
+  const innLabel = inn === 9 ? "延長" : `${inn}回`;
+  const halfLabel = half === "top" ? "オモテ" : "ウラ";
+  const side = getActiveOffenseSide();
+  const teamName = side === "away" ? (state.awayTeamName || "先攻チーム") : (state.homeTeamName || "後攻チーム");
+  const nextIdx = !state[side].hasStartedBatting ? 0 : ((state[side].currentBatterIdx + 1) % 9);
+  const nextP = state[side].active[nextIdx] || { order: nextIdx + 1, name: "" };
+
+  // 攻守交代時：今から守備につくチーム（defSide）または攻撃側（side）に未確定の代打・代走・守備交代があるか自動チェック！
+  const defSide = side === "away" ? "home" : "away";
+  const defTeamName = defSide === "away" ? (state.awayTeamName || "先攻チーム") : (state.homeTeamName || "後攻チーム");
+  const hasUncommittedDef = state[defSide].pending.some((p, i) => {
+    const a = state[defSide].active[i] || {};
+    return p.name !== a.name || p.pos !== a.pos || p.num !== a.num || a.status === "PH" || a.status === "PR";
+  });
+
+  if (hasUncommittedDef) {
+    // 自動的に②タブの該当チームを選択して守備変更原稿を生成し、③タブの画面にもそのまま表示する！
+    currentSubTeam = defSide;
+    document.getElementById("btnSubAway").classList.toggle("active", defSide === "away");
+    document.getElementById("btnSubHome").classList.toggle("active", defSide === "home");
+    renderLiveOrder();
+    generateChangeAnnouncement();
+    const generatedDefScript = document.getElementById("subScriptOutput").textContent;
+
+    document.getElementById("batterTag").textContent = `⚠️ ${innLabel}${halfLabel} 開始前：${defTeamName} の守備変更アナウンス`;
+    document.getElementById("batterScriptOutput").textContent =
+      `【守備につく ${defTeamName} に代打・代走・守備変更があります】\n` +
+      `----------------------------------------\n` +
+      `${generatedDefScript}\n` +
+      `----------------------------------------\n` +
+      `※他の守備位置変更も追加する場合は「② 背番号交代・シート変更」タブで調整してください。\n` +
+      `※読み上げたら「②タブの✔守備読み上げ完了」を押すか、そのまま下の「⏭ 次打者（${nextIdx + 1}番 ${nextP.name || ""}）」へ進んでください（次打者を押すと自動で守備オーダーも確定します）。`;
+    document.getElementById("batterScriptNote").textContent = "💡 攻撃中に出た代打・代走や守備交代を自動検知して、この回の守備変更アナウンスを表示しています！";
+  } else {
+    document.getElementById("batterTag").textContent = `攻守交代：${innLabel}の${halfLabel}（${teamName}の攻撃）`;
+    document.getElementById("batterScriptOutput").textContent = `【${innLabel}の${halfLabel} 準備完了】\n・守備紹介をする場合：「🛡 守備シート紹介」をタップ\n・先頭打者（${nextIdx + 1}番 ${nextP.name || ""}）をコールする場合：「⏭ 次打者」をタップ`;
+    document.getElementById("batterScriptNote").textContent = "※イニング先頭打者コール（「〇回の表/裏〜」あり）に自動でセットされました。";
+  }
+}
+
+function onInningChange() {
+  // イニングや表裏が変わったら、自動的に「先頭打者（『〇回のオモテ/ウラ〜』あり）」に戻し、そのチームの巡目設定を復元する
+  const leadoffSel = document.getElementById("isLeadoffBatter");
+  if (leadoffSel) leadoffSel.value = "yes";
+
+  const side = getActiveOffenseSide();
+  if (!state[side].currentLap) state[side].currentLap = "1";
+  const lapSel = document.getElementById("battingLap");
+  if (lapSel) lapSel.value = state[side].currentLap;
+
+  renderBatterButtons();
+}
+
+function onManualLapChange() {
+  const side = getActiveOffenseSide();
+  state[side].currentLap = document.getElementById("battingLap").value;
+  saveState();
+  renderBatterButtons();
+}
+
+function stepBatter(delta) {
+  const side = getActiveOffenseSide();
+  if (typeof state[side].currentBatterIdx !== "number") state[side].currentBatterIdx = 0;
+  if (!state[side].currentLap) state[side].currentLap = "1";
+
+  if (!state[side].hasStartedBatting) {
+    // まだ1番打者をコールしていない状態なら、最初のタップで1番打者(idx=0)をコールする
+    state[side].hasStartedBatting = true;
+    state[side].currentBatterIdx = 0;
+    announceBatter(side, 0);
+    return;
+  }
+
+  let nextIdx = state[side].currentBatterIdx + delta;
+  if (nextIdx >= 9) {
+    nextIdx = 0;
+    // 9番から1番へ回ったら、自動的に「2巡目以降（1回読み・背番号なし）」へ切り替え！
+    if (state[side].currentLap === "1") {
+      state[side].currentLap = "2";
+      document.getElementById("battingLap").value = "2";
+    }
+  } else if (nextIdx < 0) {
+    nextIdx = 8;
+  }
+
+  state[side].currentBatterIdx = nextIdx;
+  announceBatter(side, nextIdx);
+}
+
+function renderBatterButtons() {
+  const side = getActiveOffenseSide();
+  if (typeof state[side].currentBatterIdx !== "number") state[side].currentBatterIdx = 0;
+  if (!state[side].currentLap) state[side].currentLap = "1";
+
+  const lapSel = document.getElementById("battingLap");
+  if (lapSel && lapSel.value !== state[side].currentLap) {
+    lapSel.value = state[side].currentLap;
+  }
+
+  const curIdx = state[side].currentBatterIdx;
+  const hasStarted = Boolean(state[side].hasStartedBatting);
+  const nextIdxPreview = !hasStarted ? 0 : ((curIdx + 1) % 9);
+  const nextP = state[side].active[nextIdxPreview] || { order: nextIdxPreview + 1, name: "" };
+
+  const nextBtn = document.getElementById("nextBatterMainBtn");
+  if (nextBtn) {
+    if (!hasStarted) {
+      nextBtn.textContent = `▶ 1番打者（${nextP.name || "先頭"}）をコール`;
+    } else {
+      const willWrapToLap2 = (curIdx === 8 && state[side].currentLap === "1");
+      nextBtn.textContent = `⏭ 次打者：${nextIdxPreview + 1}番 ${nextP.name || ""}${willWrapToLap2 ? "（ここから2巡目・1回読みへ自動切替）" : ""}`;
+    }
+  }
+
+  const nextInnBtn = document.getElementById("nextInningBtn");
+  if (nextInnBtn) {
+    const curInn = parseInt(document.getElementById("inningNum").value, 10) || 1;
+    const curHalf = document.getElementById("inningHalf").value;
+    let nxtInn = curInn;
+    let nxtHalfText = "ウラ";
+    if (curHalf === "bot") {
+      nxtInn = curInn < 9 ? curInn + 1 : 9;
+      nxtHalfText = "オモテ";
+    }
+    const nxtInnText = nxtInn === 9 ? "延長" : `${nxtInn}回`;
+    nextInnBtn.textContent = `🔄 次のイニングへ（${nxtInnText}${nxtHalfText}へ）`;
+  }
+
+  const statusBadge = document.getElementById("currentBatterStatusBadge");
+  if (statusBadge) {
+    const teamName = side === "away" ? (state.awayTeamName || "先攻") : (state.homeTeamName || "後攻");
+    const lapText = state[side].currentLap === "1" ? "1巡目(2回読み)" : "2巡目以降(1回読み)";
+    statusBadge.textContent = hasStarted
+      ? `${teamName}：現在 ${curIdx + 1}番打者 ／ ${lapText}`
+      : `${teamName}：次は1番打者から ／ ${lapText}`;
+  }
+
+  const grid = document.getElementById("batterButtonsGrid");
+  grid.innerHTML = "";
+
+  state[side].active.slice(0, 9).forEach((p, idx) => {
+    const btn = document.createElement("button");
+    btn.className = "quick-btn";
+    if (hasStarted && idx === curIdx) {
+      btn.style.border = "2px solid #1b4f72";
+      btn.style.background = "#d6eaf8";
+    }
+    btn.innerHTML = `
+      <div class="q-title">${p.order}番 ${p.pos} (#${p.num || "-"}) ${(hasStarted && idx === curIdx) ? '<span class="same-surname-badge" style="background:#1b4f72;">現在打席</span>' : ''}</div>
+      <div class="q-desc">${p.name || "（未入力）"} ${p.kana ? `(${p.kana})` : ""}</div>
+    `;
+    btn.onclick = () => {
+      // もし9番(idx===8)まで進んでいて、直接1番(idx===0)をタップした場合も2巡目へ自動切替
+      if (state[side].hasStartedBatting && state[side].currentBatterIdx === 8 && idx === 0 && state[side].currentLap === "1") {
+        state[side].currentLap = "2";
+        document.getElementById("battingLap").value = "2";
+      }
+      state[side].hasStartedBatting = true;
+      state[side].currentBatterIdx = idx;
+      announceBatter(side, idx);
+    };
+    grid.appendChild(btn);
+  });
+}
+
+function announceBatter(side, idx) {
+  // もし守備側チームに未確定の代打・代走残りや守備変更があれば、打者コール開始時に自動的にオーダー確定させる
+  const defSide = side === "away" ? "home" : "away";
+  const hasUncommittedDef = state[defSide].pending.some((p, i) => {
+    const a = state[defSide].active[i] || {};
+    return p.name !== a.name || p.pos !== a.pos || p.num !== a.num || a.status === "PH" || a.status === "PR";
+  });
+  if (hasUncommittedDef) {
+    state[defSide].pending.forEach(p => { p.status = "normal"; });
+    state[defSide].active = JSON.parse(JSON.stringify(state[defSide].pending));
+    state[defSide].committedActive = JSON.parse(JSON.stringify(state[defSide].pending));
+    state[defSide].committedBench = JSON.parse(JSON.stringify(state[defSide].bench));
+    state[defSide].offenseLogs = [];
+  }
+
+  const inning = document.getElementById("inningNum").value;
+  const halfText = side === "away" ? "オモテ" : "ウラ";
+  const teamName = side === "away" ? (state.awayTeamName || "先攻チーム") : (state.homeTeamName || "後攻チーム");
+  const lap = state[side].currentLap || document.getElementById("battingLap").value;
+  const isLeadoff = document.getElementById("isLeadoffBatter").value === "yes";
+
+  const p = state[side].active[idx];
+  const callName = formatCallName(side, p);      // 苗字のみ（同姓重複時はフルネーム）
+  const fullName = formatFullNameWithKana(p);    // フルネーム
+
+  const header = isLeadoff ? `${inning}回の${halfText}、${teamName}の攻撃は、\n` : "";
+  let batterLine = "";
+  if (lap === "1") {
+    // 2回読み：打順　ポジション　フルネーム　ポジション　苗字のみ(苗字重複はフルネーム)　背番号
+    batterLine = `${ORDER_READINGS[idx]}　${p.pos}　${fullName}　${p.pos}　${callName}　背番号${p.num}`;
+  } else {
+    // 1回読み：打順　ポジション　苗字のみ(苗字重複はフルネーム) ※背番号なし
+    batterLine = `${ORDER_READINGS[idx]}　${p.pos}　${callName}`;
+  }
+
+  const lapLabel = lap === "1" ? "1巡目・2回読み" : "2巡目以降・1回読み";
+  const leadLabel = isLeadoff ? "【イニング先頭打者】" : "【2人目以降】";
+  document.getElementById("batterTag").textContent = `打者紹介（${lapLabel}）${leadLabel}`;
+  document.getElementById("batterScriptOutput").textContent = header + batterLine;
+
+  if (isLeadoff) {
+    document.getElementById("batterScriptNote").textContent = "※イニング先頭打者は、ボールバック後にキャッチャーが2塁へ送球完了したタイミングでコールします。（次の打者からは自動で「2人目以降」に切り替わります）";
+    // 先頭打者を表示したら、次の打者タップ時は自動で「2人目以降（打者のみコール）」に切り替える
+    document.getElementById("isLeadoffBatter").value = "no";
+  } else {
+    document.getElementById("batterScriptNote").textContent = "※「⏭ 次打者」ボタンを押すと打順が1つ進み、9番の次に1番へ戻ると自動で「2巡目以降（1回読み）」に切り替わります。";
+  }
+
+  saveState();
+  renderBatterButtons();
+}
+
+function announceSheetIntro() {
+  const half = document.getElementById("inningHalf").value;
+  const defSide = half === "top" ? "home" : "away";
+  const defTeam = defSide === "home" ? (state.homeTeamName || "後攻チーム") : (state.awayTeamName || "先攻チーム");
+  const isFirstTop = (document.getElementById("inningNum").value === "1" && half === "top");
+
+  const byPos = {};
+  state[defSide].active.forEach(p => {
+    if (p.name && p.name.trim() !== "") {
+      byPos[p.pos] = formatFullNameWithKana(p);
+    }
+  });
+
+  let lines = [];
+  if (isFirstTop) {
+    lines.push(`まず、守ります ${defTeam}の`);
+  } else {
+    lines.push(`守ります ${defTeam}の`);
+  }
+  lines.push(`ピッチャーは ${byPos["ピッチャー"]}、キャッチャー ${byPos["キャッチャー"]}、ファースト ${byPos["ファースト"]}、`);
+  lines.push(`セカンド ${byPos["セカンド"]}、サード ${byPos["サード"]}、ショート ${byPos["ショート"]}、`);
+  lines.push(`レフト ${byPos["レフト"]}、センター ${byPos["センター"]}、ライト ${byPos["ライト"]}。`);
+
+  if (isFirstTop) {
+    const has2B = Boolean(state.ump2B && state.ump2B.trim() !== "");
+    if (has2B) {
+      lines.push(`\n審判員は、球審 ${state.umpPlate || "〇〇"}、一塁 ${state.ump1B || "〇〇"}、二塁 ${state.ump2B.trim()}、三塁 ${state.ump3B || "〇〇"}、`);
+      lines.push(`以上の4氏でございます。`);
+    } else {
+      lines.push(`\n審判員は、球審 ${state.umpPlate || "〇〇"}、一塁 ${state.ump1B || "〇〇"}、三塁 ${state.ump3B || "〇〇"}、`);
+      lines.push(`以上の3氏でございます。`);
+    }
+  } else {
+    lines.push(`以上でございます。`);
+  }
+
+  document.getElementById("batterTag").textContent = isFirstTop ? "項番3：シート紹介（1回オモテ・審判含む）" : "項番4：シート紹介（1回ウラ以降）";
+  document.getElementById("batterScriptOutput").textContent = lines.join("\n");
+  document.getElementById("batterScriptNote").textContent = "※選手が守備につき、ピッチャーが投球練習を始めたらアナウンスします。";
+}
+
+// ==================== TAB 4: FLOW & TEMPLATES ====================
+function showFlowScript(type) {
+  const away = state.awayTeamName || "（先攻チーム）";
+  const home = state.homeTeamName || "（後攻チーム）";
+  const extraDiv = document.getElementById("flowExtraInputs");
+  extraDiv.style.display = "none";
+  extraDiv.innerHTML = "";
+
+  let tag = "", text = "", note = "";
+
+  if (type === "pre30") {
+    tag = "項番1：試合開始30分前";
+    const tLine = state.gameNumber === "第1試合" && state.tournamentName ? `${state.tournamentName}、
+` : "";
+    text = `おはようございます（または お待たせいたしました）。
+${tLine}本日の ${state.gameNumber}は、
+先攻 ${away} 対 後攻 ${home} です。
+試合開始予定時刻は、${state.startTime || "〇時〇分"}でございます。試合開始までもうしばらくお待ちください。`;
+    note = "※大会名読みは1試合目のみです。";
+  } else if (type === "knockHome") {
+    tag = "項番2：シートノック（後攻）";
+    text = `後攻の ${home} はシートノックにお入りください。ノック時間はただ今より5分間です。
+
+【3分経過時】ノック時間、残り2分です。
+【5分経過時】シートノック終了です。`;
+    note = "※後攻チームがベンチ前に整列したら開始します。";
+  } else if (type === "knockAway") {
+    tag = "項番2：シートノック（先攻）";
+    text = `先攻の ${away} はシートノックにお入りください。ノック時間は同じくただ今より5分間です。
+
+【3分経過時】ノック時間、残り2分です。
+【5分経過時】シートノック終了です。`;
+    note = "※後攻チームが整列し挨拶が終わったら開始します。";
+  } else if (type === "lineup") {
+    tag = "項番2：スタメン＆審判員発表";
+    function buildTeamLineupLines(side) {
+      const st = state[side].starters;
+      const lines = st.slice(0, 9).map((p, i) => `${ORDER_READINGS[i]}　${p.pos}　${formatFullNameWithKana(p)}　${p.pos}　${formatCallName(side, p)}　背番号${p.num}`);
+      if (st[9] && st[9].name && st[9].name.trim() !== "") {
+        const p10 = st[9];
+        lines.push(`ピッチャー　${formatFullNameWithKana(p10)}　ピッチャー　${formatCallName(side, p10)}　背番号${p10.num}`);
+      }
+      return lines.join("\n");
+    }
+    const awayLines = buildTeamLineupLines("away");
+    const homeLines = buildTeamLineupLines("home");
+
+    text = `大変ながらくお待たせいたしました。
+本日の ${state.gameNumber}、${away} 対 ${home} の試合開始に先だちまして、両チームのラインナップ ならびに 審判員をお知らせいたします。
+
+` +
+           `まず、先攻の ${state.awayBench}塁側、${away}。
+${awayLines}
+
+` +
+           `続きまして、後攻の ${state.homeBench}塁側、${home}。
+${homeLines}
+
+` +
+           `なお、この試合の審判員は、\n` +
+           `球審 ${state.umpPlate || "〇〇"}、球審 ${state.umpPlate || "〇〇"}、塁審は\n` +
+           ((state.ump2B && state.ump2B.trim() !== "")
+             ? `一塁 ${state.ump1B || "〇〇"}、一塁 ${state.ump1B || "〇〇"}、二塁 ${state.ump2B.trim()}、二塁 ${state.ump2B.trim()}、\n三塁 ${state.ump3B || "〇〇"}、三塁 ${state.ump3B || "〇〇"}、以上 4氏（よんし）審判員により行なわれます。\n`
+             : `一塁 ${state.ump1B || "〇〇"}、一塁 ${state.ump1B || "〇〇"}、\n三塁 ${state.ump3B || "〇〇"}、三塁 ${state.ump3B || "〇〇"}、以上 3氏（さんし）審判員により行なわれます。\n`
+           ) +
+           `試合開始まで今しばらくお待ちください。`;
+    note = "※先攻チームのシートノックが始まったら開始します。途中の「ノック時間残り2分」コールを忘れないようご注意ください。";
+  } else if (type === "gameStart") {
+    tag = "項番3：試合開始";
+    text = `大変ながらくお待たせいたしました。
+${away} 対 ${home}、まもなく試合開始でございます。`;
+    note = "※両チームが整列し、挨拶が終わったらアナウンスします。";
+  } else if (type === "waterUmp") {
+    tag = "項番12：審判員の給水";
+    text = `審判員の給水を行ないます。
+審判員のみなさんは、ベンチにお集まりください。`;
+  } else if (type === "waterPlayer") {
+    tag = "項番13：選手の給水";
+    text = `守備についている選手、並びにランナー・コーチャーのみなさんは、ベンチに戻って給水してください。
+
+【2〜3分経過後】
+選手のみなさんは、守備に戻ってください。`;
+  } else if (type === "nextGame") {
+    tag = "項番14：次の試合の連絡";
+    extraDiv.style.display = "block";
+    extraDiv.innerHTML = `
+      <div class="form-row">
+        <div class="form-group"><label>次試合 チームA</label><input type="text" id="nextTeamA" placeholder="チーム名" oninput="updateNextGameText()"></div>
+        <div class="form-group"><label>次試合 チームB</label><input type="text" id="nextTeamB" placeholder="チーム名" oninput="updateNextGameText()"></div>
+      </div>
+    `;
+    updateNextGameText();
+    return;
+  } else if (type === "tiebreak") {
+    tag = "項番15：タイブレーク";
+    extraDiv.style.display = "block";
+    extraDiv.innerHTML = `
+      <div class="form-row">
+        <div class="form-group" style="max-width:120px;"><label>同点スコア</label><input type="text" id="tieScore" value="3" oninput="updateTiebreakText()"></div>
+      </div>
+    `;
+    updateTiebreakText();
+    return;
+  } else if (type === "gameEnd") {
+    tag = "項番11：試合終了";
+    extraDiv.style.display = "block";
+    extraDiv.innerHTML = `
+      <div class="form-row">
+        <div class="form-group"><label>勝利チーム</label>
+          <select id="winTeamSel" onchange="updateGameEndText()">
+            <option value="${away}">${away}（先攻）</option>
+            <option value="${home}">${home}（後攻）</option>
+          </select>
+        </div>
+        <div class="form-group" style="max-width:90px;"><label>勝ち得点</label><input type="number" id="winScore" value="5" oninput="updateGameEndText()"></div>
+        <div class="form-group" style="max-width:90px;"><label>負け得点</label><input type="number" id="loseScore" value="2" oninput="updateGameEndText()"></div>
+        <div class="form-group" style="max-width:120px;"><label>コールド</label>
+          <select id="isCalled" onchange="updateGameEndText()">
+            <option value="no">通常終了</option>
+            <option value="yes">コールドゲーム</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row" id="calledInputs" style="display:none;">
+        <div class="form-group" style="max-width:100px;"><label>何回以降</label><input type="number" id="calledInning" value="5" oninput="updateGameEndText()"></div>
+        <div class="form-group" style="max-width:100px;"><label>何点差</label><input type="number" id="calledDiff" value="7" oninput="updateGameEndText()"></div>
+      </div>
+    `;
+    updateGameEndText();
+    return;
+  }
+
+  document.getElementById("flowTag").textContent = tag;
+  document.getElementById("flowScriptOutput").textContent = text;
+  document.getElementById("flowScriptNote").textContent = note;
+}
+
+function updateNextGameText() {
+  const a = document.getElementById("nextTeamA").value || "（チーム名）";
+  const b = document.getElementById("nextTeamB").value || "（チーム名）";
+  document.getElementById("flowTag").textContent = "項番14：次の試合の連絡";
+  document.getElementById("flowScriptOutput").textContent = `お呼び出しを致します。
+次の試合 ${a} と ${b} の監督、キャプテンならびに先発キャッチャーは、本部までお越しください。`;
+  document.getElementById("flowScriptNote").textContent = "";
+}
+
+function updateTiebreakText() {
+  const s = document.getElementById("tieScore").value || "〇";
+  document.getElementById("flowTag").textContent = "項番15：タイブレーク";
+  document.getElementById("flowScriptOutput").textContent = `ただ今より、${s} 対 ${s} で同点のため、タイブレークに入ります。
+
+【タイブレークで勝敗がつかない場合】
+両チーム 引き分けになりましたので、抽選により勝敗を決定します。`;
+  document.getElementById("flowScriptNote").textContent = "";
+}
+
+function updateGameEndText() {
+  const winTeam = document.getElementById("winTeamSel").value;
+  const winS = document.getElementById("winScore").value || "〇";
+  const loseS = document.getElementById("loseScore").value || "〇";
+  const isCalled = document.getElementById("isCalled").value === "yes";
+  document.getElementById("calledInputs").style.display = isCalled ? "flex" : "none";
+
+  let text = "";
+  if (isCalled) {
+    const inn = document.getElementById("calledInning").value || "5";
+    const diff = document.getElementById("calledDiff").value || "7";
+    text = `大会規則により、${inn}回以降、${diff}点差のコールドゲームとなり、
+${winS} 対 ${loseS} で ${winTeam} が勝ちました。
+両チームのスタッフの方は、グランド整備にご協力をお願いします。`;
+  } else {
+    text = `ご覧いただきましたように、${winS} 対 ${loseS} で ${winTeam} が勝ちました。
+両チームのスタッフの方は、グランド整備にご協力をお願いします。`;
+  }
+  document.getElementById("flowTag").textContent = "項番11：試合終了";
+  document.getElementById("flowScriptOutput").textContent = text;
+  document.getElementById("flowScriptNote").textContent = "※選手が整列し、挨拶が終わったらアナウンスします。";
+}
+
+// Sample Data & Reset
+function loadSampleData() {
+  if (!confirm("動作確認用のサンプルチーム・選手データ（ふりがな・同姓選手含む）を入力しますか？")) return;
+  state.tournamentName = "令和8年度 幸区少年野球連盟 春季大会";
+  state.gameNumber = "第1試合";
+  state.startTime = "9時00分";
+  state.awayTeamName = "幸スターズ";
+  state.awayBench = "3";
+  state.homeTeamName = "御幸フェニックス";
+  state.homeBench = "1";
+  state.umpPlate = "高橋"; state.ump1B = "福田"; state.ump2B = "栗林"; state.ump3B = "土屋";
+
+  const awayPlayers = [
+    { pos: "センター", name: "やまだ たろう", kana: "", num: "8" },
+    { pos: "セカンド", name: "さとう けん", kana: "", num: "4" },
+    { pos: "ショート", name: "すずき しょうた", kana: "", num: "6" },
+    { pos: "ファースト", name: "たなか だいすけ", kana: "", num: "3" },
+    { pos: "ピッチャー", name: "たかはし れん", kana: "", num: "1" },
+    { pos: "キャッチャー", name: "いとう そうた", kana: "", num: "2" },
+    { pos: "サード", name: "わたなべ りく", kana: "", num: "5" },
+    { pos: "レフト", name: "やまだ じろう", kana: "", num: "7" },
+    { pos: "ライト", name: "なかむら ひなた", kana: "", num: "9" }
+  ];
+  const awayBenchPlayers = [
+    { name: "こばやし つばさ", kana: "", num: "10" },
+    { name: "かとう いつき", kana: "", num: "11" },
+    { name: "よしだ はると", kana: "", num: "12" },
+    { name: "やまもと そら", kana: "", num: "13" }
+  ];
+
+  const homePlayers = [
+    { pos: "ショート", name: "さいとう はやて", kana: "", num: "6" },
+    { pos: "セカンド", name: "まつもと りつ", kana: "", num: "4" },
+    { pos: "ピッチャー", name: "いのうえ あさひ", kana: "", num: "1" },
+    { pos: "キャッチャー", name: "きむら みなと", kana: "", num: "2" },
+    { pos: "ファースト", name: "はやし だん", kana: "", num: "3" },
+    { pos: "センター", name: "しみず ゆいと", kana: "", num: "8" },
+    { pos: "サード", name: "やまざき あらた", kana: "", num: "5" },
+    { pos: "レフト", name: "もり あおい", kana: "", num: "7" },
+    { pos: "ライト", name: "いけだ なぎ", kana: "", num: "9" }
+  ];
+  const homeBenchPlayers = [
+    { name: "はしもと りょう", kana: "", num: "10" },
+    { name: "いしかわ そうた", kana: "", num: "11" },
+    { name: "あべ えいた", kana: "", num: "12" }
+  ];
+
+  state.away = createDefaultRoster();
+  awayPlayers.forEach((p, i) => {
+    state.away.starters[i] = { order: i + 1, ...p, status: "normal" };
+  });
+  awayBenchPlayers.forEach((b, i) => {
+    state.away.bench[i] = { id: "ab" + i, ...b, used: false };
+  });
+  state.away.active = JSON.parse(JSON.stringify(state.away.starters));
+  state.away.pending = JSON.parse(JSON.stringify(state.away.starters));
+  state.away.committedActive = JSON.parse(JSON.stringify(state.away.starters));
+  state.away.committedBench = JSON.parse(JSON.stringify(state.away.bench));
+  state.away.historyStack = [];
+
+  state.home = createDefaultRoster();
+  homePlayers.forEach((p, i) => {
+    state.home.starters[i] = { order: i + 1, ...p, status: "normal" };
+  });
+  homeBenchPlayers.forEach((b, i) => {
+    state.home.bench[i] = { id: "hb" + i, ...b, used: false };
+  });
+  state.home.active = JSON.parse(JSON.stringify(state.home.starters));
+  state.home.pending = JSON.parse(JSON.stringify(state.home.starters));
+  state.home.committedActive = JSON.parse(JSON.stringify(state.home.starters));
+  state.home.committedBench = JSON.parse(JSON.stringify(state.home.bench));
+  state.home.historyStack = [];
+
+  safeSetStorage("kushoren_announce_v2", JSON.stringify(state));
+  restoreHeaderInputs();
+  renderSetupTables();
+  renderLiveOrder();
+  renderBatterButtons();
+}
+
+function resetAllData() {
+  if (!confirm("入力データ・イニング・打順・原稿表示をすべて消去して初期状態（1回オモテ）に戻しますか？")) return;
+  safeRemoveStorage("kushoren_announce_v2");
+  state = {
+    tournamentName: "", gameNumber: "第1試合", startTime: "",
+    awayTeamName: "", awayBench: "3", homeTeamName: "", homeBench: "1",
+    umpPlate: "", ump1B: "", ump2B: "", ump3B: "",
+    away: createDefaultRoster(), home: createDefaultRoster()
+  };
+
+  // ② 背番号交代・シート変更タブの選択チーム・入力欄・原稿表示を初期状態に戻す
+  currentSubTeam = "away";
+  const btnSubAway = document.getElementById("btnSubAway");
+  const btnSubHome = document.getElementById("btnSubHome");
+  if (btnSubAway) btnSubAway.classList.add("active");
+  if (btnSubHome) btnSubHome.classList.remove("active");
+  const quickSubType = document.getElementById("quickSubType");
+  if (quickSubType) {
+    quickSubType.value = "DEF";
+    toggleQuickRunnerBase();
+  }
+  const quickOutNum = document.getElementById("quickOutNum");
+  const quickInNum = document.getElementById("quickInNum");
+  if (quickOutNum) quickOutNum.value = "";
+  if (quickInNum) quickInNum.value = "";
+  const subPatternTag = document.getElementById("subPatternTag");
+  const subScriptOutput = document.getElementById("subScriptOutput");
+  const subScriptNote = document.getElementById("subScriptNote");
+  if (subPatternTag) subPatternTag.textContent = "待機中";
+  if (subScriptOutput) subScriptOutput.textContent = "左側の「背番号クイック交代」または各選手の「交代/代打」ボタン、守備位置変更を操作してください。";
+  if (subScriptNote) subScriptNote.textContent = "";
+
+  // ③ 打者・シート紹介タブのイニング・表裏・巡目・先頭打者設定・原稿表示を初期状態（1回オモテ・1巡目・先頭打者）に戻す
+  const inningNum = document.getElementById("inningNum");
+  const inningHalf = document.getElementById("inningHalf");
+  const battingLap = document.getElementById("battingLap");
+  const isLeadoffBatter = document.getElementById("isLeadoffBatter");
+  if (inningNum) inningNum.value = "1";
+  if (inningHalf) inningHalf.value = "top";
+  if (battingLap) battingLap.value = "1";
+  if (isLeadoffBatter) isLeadoffBatter.value = "yes";
+  const batterTag = document.getElementById("batterTag");
+  const batterScriptOutput = document.getElementById("batterScriptOutput");
+  const batterScriptNote = document.getElementById("batterScriptNote");
+  if (batterTag) batterTag.textContent = "打者・シート紹介";
+  if (batterScriptOutput) batterScriptOutput.textContent = "上の「⏭ 次打者へ進む」または各打者ボタンをタップしてください。";
+  if (batterScriptNote) batterScriptNote.textContent = "";
+
+  // ④ 試合進行・定型文タブの追加フォーム・原稿表示を初期状態に戻す
+  const flowExtraInputs = document.getElementById("flowExtraInputs");
+  if (flowExtraInputs) {
+    flowExtraInputs.style.display = "none";
+    flowExtraInputs.innerHTML = "";
+  }
+  const flowTag = document.getElementById("flowTag");
+  const flowScriptOutput = document.getElementById("flowScriptOutput");
+  const flowScriptNote = document.getElementById("flowScriptNote");
+  if (flowTag) flowTag.textContent = "定型アナウンス";
+  if (flowScriptOutput) flowScriptOutput.textContent = "上のメニューから場面を選択してください。登録したチーム名・選手名・審判名が自動で差し込まれます。";
+  if (flowScriptNote) flowScriptNote.textContent = "";
+
+  restoreHeaderInputs();
+  renderSetupTables();
+  renderLiveOrder();
+  renderBatterButtons();
+}
+
+init();
+</script>
+
+
+</body></html>
